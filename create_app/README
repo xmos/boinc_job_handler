@@ -1,0 +1,14 @@
+to create an application, run the command:
+
+python create_app_wrapper.py <app config file> --platforms_supported <list of platforms supported>
+
+example:
+python create_app_wrapper.py app_config.cfg --platforms_supported x86_64-apple-darwin x86_64-pc-linux-gnu
+
+This command with copy the required files on the server, run the create_app script on the server, created a new application (or a new version of an existing application) and delete the temporary files that were copied on the server.
+
+The application is created in the test_new project of the boincadm@srv-bri-grid0 server.
+Changing the project or server name is not supported.
+
+Please refer to the examples/create_app for a sample of the app_config file
+
