@@ -17,10 +17,11 @@
 
 # test functions for submit_api.py
 
-# YOU MUST CREATE A FILE "test_auth' CONTAINING
+# YOU MUST CREATE A FILE authorization file CONTAINING
 #
 # project URL
 # authenticator of your account
+# The name of the authorization file is passed in the command line arguments.
 
 import os
 import sys
@@ -30,19 +31,20 @@ import shutil
 import random
 import hashlib
 import argparse
-from submit_api import *
+from batch_process_api import *
 
+batch_state = {"BATCH_STATE_INIT":"0", "BATCH_STATE_IN_PROGRESS":"1", "BATCH_STATE_COMPLETE":"2", "BATCH_STATE_ABORTED":"3", "BATCH_STATE_RETIRED":"4"}
 # read URL and auth from a file so we don't have to include it here
 #
 def get_auth():
-    with open("test_auth", "r") as f:
+    with open(auth_file, "r") as f:
         url = (f.readline()).strip()
         auth = (f.readline()).strip()
     return [url, auth]
 
 # make a batch description, to be passed to estimate_batch() or submit_batch()
 #
-def make_batch_desc(test_cfg, app_cfg):
+def make_batch_desc(batch_cfg, app_cfg):
     file_info = """
         <file_info>
             <number>%s</number>
@@ -66,7 +68,7 @@ def make_batch_desc(test_cfg, app_cfg):
     num_input_files = 1
 
     input_wav_files_descriptors = []
-    for filename in test_cfg.input_files_on_server:
+    for filename in batch_cfg.input_files_on_server:
         file_desc = FILE_DESC()
         file_desc.mode = 'local_staged'
         file_desc.source = filename
@@ -74,7 +76,7 @@ def make_batch_desc(test_cfg, app_cfg):
 
     executable_descs = []
     exec_count = num_input_files
-    for platform, exe_info in test_cfg.executable_info_dict.items():
+    for platform, exe_info in batch_cfg.executable_info_dict.items():
         fdesc = FILE_DESC()
         fdesc.mode = 'local_staged'
         fdesc.source = exe_info.boinc_name
@@ -85,10 +87,10 @@ def make_batch_desc(test_cfg, app_cfg):
 
     batch = BATCH_DESC()
     [batch.project, batch.authenticator] = get_auth()
-    batch.app_name = test_cfg.app_name
-    batch.batch_name = test_cfg.batch_name
+    batch.app_name = batch_cfg.app_name
+    batch.batch_name = batch_cfg.batch_name
     #batch.app_version_num = int(app_version)
-    batch.batch_id = test_cfg.batch_id
+    batch.batch_id = batch_cfg.batch_id
     batch.jobs = []
 
 
@@ -122,44 +124,29 @@ def make_batch_desc(test_cfg, app_cfg):
     </workunit>
 </input_template>
 """ % (all_input_file_info, all_exec_file_info, all_input_file_ref, all_exec_file_ref, i+1, (i+1)*1e10)
-        job.output_template = create_output_template(test_cfg, app_cfg)
+        job.output_template = create_output_template(batch_cfg, app_cfg)
         batch.jobs.append(copy.copy(job))
 
     return batch
 
-def test_estimate_batch(batch_name, batch_id):
-    batch = make_batch_desc(batch_name, batch_id)
-    #print batch.to_xml("submit")
-    r = estimate_batch(batch)
-    if check_error(r):
-        return
-    print 'estimated time: ', r[0].text, ' seconds'
 
-def test_submit_batch(test_cfg, app_cfg):
-    batch = make_batch_desc(test_cfg, app_cfg)
-    r = submit_batch(batch)
+def submit_batch(batch_cfg, app_cfg):
+    batch = make_batch_desc(batch_cfg, app_cfg)
+    r = submit_batch_core(batch)
     print r
     if check_error(r):
         assert False, "submit_batch returned error"
         return
     print 'batch ID: ', r[0].text
 
-def test_query_batches():
-    req = REQUEST()
-    [req.project, req.authenticator] = get_auth()
-    req.get_cpu_time = True
-    r = query_batches(req)
-    if check_error(r):
-        return
-    print ET.tostring(r)
 
-def test_query_batch(id):
+def query_batch(id):
     req = REQUEST()
     [req.project, req.authenticator] = get_auth()
     req.batch_id = id
     req.get_cpu_time = True
     req.get_job_details = True
-    r = query_batch(req)
+    r = query_batch_core(req)
     if check_error(r):
         assert False, "query_batch returned error"
     '''
@@ -175,14 +162,14 @@ def test_query_batch(id):
     '''
     return r
 
-def test_create_batch(name, app_name):
+def create_batch(name, app_name):
     req = CREATE_BATCH_REQ()
     [req.project, req.authenticator] = get_auth()
     req.app_name = app_name
     req.batch_name = name
     req.expire_time = 0
     
-    r = create_batch(req)
+    r = create_batch_core(req)
 
     if check_error(r):
         assert(False),"create_batch returned error"
@@ -190,84 +177,61 @@ def test_create_batch(name, app_name):
     print 'batch ID: ', r[0].text
     return r[0].text
 
-def test_abort_batch(batch_id):
+def abort_batch(batch_id):
     req = REQUEST()
     [req.project, req.authenticator] = get_auth()
     req.batch_id = batch_id
-    r = abort_batch(req)
+    r = abort_batch_core(req)
     if check_error(r):
         return
     print 'success'
 
-def test_retire_batch(batch_id):
+def retire_batch(batch_id):
     req = REQUEST()
     [req.project, req.authenticator] = get_auth()
     req.batch_id = batch_id
-    r = retire_batch(req)
+    r = retire_batch_core(req)
     if check_error(r):
         assert(False),"retire jobs failed"
     return
 
-def test_upload_files(local_names, boinc_names, batch_id):
+def upload_files(local_names, boinc_names, batch_id):
     req = UPLOAD_FILES_REQ()
     [req.project, req.authenticator] = get_auth()
     req.batch_id = batch_id
     req.local_names = local_names
     req.boinc_names = boinc_names
     print req.boinc_names
-    r = upload_files(req)
+    r = upload_files_core(req)
     if check_error(r):
         assert(False),"upload_files returned error"
         return
     print 'upload_files: success'
 
-def test_query_files(boinc_names_list, batch_id):
-    req = QUERY_FILES_REQ()
-    [req.project, req.authenticator] = get_auth()
-    req.batch_id = batch_id
-    req.boinc_names = boinc_names_list
-    r = query_files(req)
-    if check_error(r):
-        assert(False),"query_files returned error"
-        return
-    print 'absent files:'
-    for f in r[0]:
-        print f.text
 
-def test_get_output_file(job_name, file_num):
+def get_output_file(job_name, file_num):
     req = REQUEST()
     [req.project, req.authenticator] = get_auth()
     req.instance_name = job_name
     req.file_num = file_num
-    r = get_output_file(req)
+    r = get_output_file_core(req)
     print(r)
     return r
 
-def test_get_output_files(batch_id):
-    req = REQUEST()
-    [req.project, req.authenticator] = get_auth()
-    req.batch_id = batch_id
-    r = get_output_files(req)
-    print(r)
-
-def test_get_job_counts():
-    req = REQUEST()
-    req.project = 'http://boinc-server.xmos.com/hellopython/'
-    x = get_job_counts(req)
-    print x.find('results_ready_to_send').text
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("app_cfg_file", help="app config file",)
     parser.add_argument("batch_cfg_file", help="batch config file")
+    parser.add_argument("auth_file", help="authorization details of the user trying to submit a batch")
     parser.add_argument("--platforms_supported", nargs="*",type=str,default=[])
     parser.parse_args()
     args = parser.parse_args()
     return args
 
 
-def create_output_template(test_cfg, app_cfg):
+def create_output_template(batch_cfg, app_cfg):
     file_info = """
         <file_info>
             <name><OUTFILE_%s/></name>
@@ -351,7 +315,7 @@ class app_config_params(object):
         self.executable_logical_names_dict = executable_logical_names
 
 
-def parse_test_cfg_file(cfg_file, app_cfg, platforms_supported):
+def parse_batch_cfg_file(cfg_file, app_cfg, platforms_supported):
     config = configparser.ConfigParser()
     config.read(cfg_file)
     #parse test_params
@@ -396,8 +360,6 @@ def parse_app_cfg_file(cfg_file, platforms_supported):
 
     output_files_list = output_files.split()
     return app_config_params(app_name, input_file, output_files_list, executable_logical_names)
-    test_params = parse_test_params(config, 'test_params')
-    return test_params
 
 '''
 Go through a directory tree and get all wav files
@@ -416,20 +378,20 @@ def get_files(input_dir):
 '''
 given a list of jobs, download output files corresponding to each job
 '''
-def download_output_files(test_cfg, jobnames):
+def download_output_files(batch_cfg, jobnames):
     num_output_files_per_job = 1
-    assert(len(jobnames) == len(test_cfg.input_files_on_server)), "num input files (%d) != num jobs (%d)"%(len(test_cfg.input_files_on_server), len(jobnames)) 
+    assert(len(jobnames) == len(batch_cfg.input_files_on_server)), "num input files (%d) != num jobs (%d)"%(len(batch_cfg.input_files_on_server), len(jobnames)) 
 
     for i in range(len(jobnames)):
         #create one output directory per job
-        output_path = os.path.join(test_cfg.output_dir, os.path.splitext(test_cfg.input_files_on_server[i])[0])
+        output_path = os.path.join(batch_cfg.output_dir, os.path.splitext(batch_cfg.input_files_on_server[i])[0])
         if os.path.exists(output_path):
             shutil.rmtree(output_path)
         os.makedirs(output_path)
 
-        for j in range(len(test_cfg.output_files_list)):
-            output_name = os.path.join(output_path, test_cfg.output_files_list[j])
-            download_url = test_get_output_file(jobnames[i], str(j))
+        for j in range(len(batch_cfg.output_files_list)):
+            output_name = os.path.join(output_path, batch_cfg.output_files_list[j])
+            download_url = get_output_file(jobnames[i], str(j))
             r = requests.get(download_url)
             assert(r.status_code == requests.codes.ok),"requests.get(download_url) returns error"
                 
@@ -446,62 +408,64 @@ def get_md5_hash_filename(filename):
     return readable_hash
     
 
-def upload_input_files(test_cfg):
+def upload_input_files(batch_cfg):
     #upload executables
     local_names = []
     boinc_names = []
-    for info in test_cfg.executable_info_dict.values():
+    for info in batch_cfg.executable_info_dict.values():
         local_names.append(info.local_name)
         boinc_names.append(info.boinc_name)
 
-    test_upload_files(local_names, boinc_names, test_cfg.batch_id)
+    upload_files(local_names, boinc_names, batch_cfg.batch_id)
     
     #upload input files
-    test_upload_files(test_cfg.local_files_list, test_cfg.input_files_on_server, test_cfg.batch_id)
+    upload_files(batch_cfg.local_files_list, batch_cfg.input_files_on_server, batch_cfg.batch_id)
 
 
-def test(app_cfg_file, batch_cfg_file, platforms_supported):
+def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
     assert(len(platforms_supported) > 0),"no platforms specified. Provide --platform_supported argument on the command line"
     
     app_cfg = parse_app_cfg_file(app_cfg_file, platforms_supported)
-    test_cfg = parse_test_cfg_file(batch_cfg_file, app_cfg, platforms_supported)
+    batch_cfg = parse_batch_cfg_file(batch_cfg_file, app_cfg, platforms_supported)
 
-    assert(test_cfg.app_name == app_cfg.app_name),"app_name in test and app config files doesn't match"
-    if os.path.exists(test_cfg.output_dir):
-        shutil.rmtree(test_cfg.output_dir)
-    os.makedirs(test_cfg.output_dir)
+    assert(batch_cfg.app_name == app_cfg.app_name),"app_name in test and app config files doesn't match"
+    if os.path.exists(batch_cfg.output_dir):
+        shutil.rmtree(batch_cfg.output_dir)
+    os.makedirs(batch_cfg.output_dir)
 
-    app_name = test_cfg.app_name
+    app_name = batch_cfg.app_name
     batch_name = app_name + '_' + str(random.randint(1,1234565))
-    test_cfg.batch_name = batch_name
+    batch_cfg.batch_name = batch_name
 
-    test_cfg.batch_id = test_create_batch(batch_name, app_name) #batch_id is a string
-    print('created batch ',test_cfg.batch_id)
+    batch_cfg.batch_id = create_batch(batch_name, app_name) #batch_id is a string
+    print('created batch ',batch_cfg.batch_id)
 
-    upload_input_files(test_cfg)
-    test_submit_batch(test_cfg, app_cfg)
+    upload_input_files(batch_cfg)
+    submit_batch(batch_cfg, app_cfg)
     
-    query_return = test_query_batch(test_cfg.batch_id) 
+    query_return = query_batch(batch_cfg.batch_id) 
     status = query_return.find('state').text
     jobnames = []
     for job in query_return.findall('job'):
         jobnames.append(job.find('name').text + '_' + '0')
     
     #wait for batch to complete
-    while status == '0' or status == '1':
+    while status == batch_state["BATCH_STATE_INIT"]  or status == batch_state["BATCH_STATE_IN_PROGRESS"]:
         time.sleep(5)
-        print 'batch_id %s query status'%(test_cfg.batch_id)
-        query_return = test_query_batch(test_cfg.batch_id) 
+        print 'batch_id %s query status'%(batch_cfg.batch_id)
+        query_return = query_batch(batch_cfg.batch_id) 
         status = query_return.find('state').text
-        print 'batch_id %s status is %s'%(test_cfg.batch_id, status)
+        print 'batch_id %s status is %s'%(batch_cfg.batch_id, status)
 
-    assert(status == '2'), "batch completed with invalid status %s"%(status)
+    assert(status == batch_state["BATCH_STATE_COMPLETE"]), "batch completed with invalid status %s"%(status)
     
     #download output files
-    download_output_files(test_cfg, jobnames)
+    download_output_files(batch_cfg, jobnames)
 
-    test_retire_batch(test_cfg.batch_id)
+    retire_batch(batch_cfg.batch_id)
 
+auth_file=""
 if __name__ == "__main__":
     args = parse_arguments()
-    test(args.app_cfg_file, args.batch_cfg_file, args.platforms_supported)
+    auth_file = args.auth_file
+    process_batch(args.app_cfg_file, args.batch_cfg_file, args.platforms_supported)

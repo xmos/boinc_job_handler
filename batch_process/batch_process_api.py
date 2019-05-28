@@ -127,7 +127,7 @@ def do_http_post(req, project_url, handler='submit_rpc_handler.php'):
 
 ########### API FUNCTIONS START HERE ###############
 
-def abort_batch(req):
+def abort_batch_core(req):
     req_xml = ('<abort_batch>\n'
     '<authenticator>%s</authenticator>\n'
     '<batch_id>%s</batch_id>\n'
@@ -146,13 +146,13 @@ def abort_jobs(req):
 
 # req is a CREATE_BATCH_REQ
 #
-def create_batch(req):
+def create_batch_core(req):
     return do_http_post(req.to_xml(), req.project)
 
 def estimate_batch(req):
     return do_http_post(req.to_xml('estimate_batch'), req.project)
 
-def query_batch(req):
+def query_batch_core(req):
     req_xml = ('<query_batch>\n'
     '<authenticator>%s</authenticator>\n'
     '<batch_id>%s</batch_id>\n'
@@ -186,7 +186,7 @@ def query_job(req):
     ) %(req.authenticator, req.job_id)
     return do_http_post(req_xml, req.project)
 
-def get_output_file(req):
+def get_output_file_core(req):
     auth_str = hashlib.md5(req.authenticator+req.instance_name).hexdigest()
     name = req.instance_name
     file_num = req.file_num
@@ -196,7 +196,7 @@ def get_output_files(req):
     auth_str = hashlib.md5(req.authenticator+str(req.batch_id)).hexdigest()
     return req.project+"/get_output.php?cmd=batch_files&batch_id=%s&auth_str=%s"%(req.batch_id, auth_str)
 
-def retire_batch(req):
+def retire_batch_core(req):
     req_xml = ('<retire_batch>\n'
     '<authenticator>%s</authenticator>\n'
     '<batch_id>%s</batch_id>\n'
@@ -204,7 +204,7 @@ def retire_batch(req):
     ) %(req.authenticator, req.batch_id)
     return do_http_post(req_xml, req.project)
 
-def submit_batch(req):
+def submit_batch_core(req):
     return do_http_post(req.to_xml('submit_batch'), req.project)
 
 # see if reply is error.
@@ -243,7 +243,7 @@ class UPLOAD_FILES_REQ:
         xml += '</upload_files>\n'
         return xml
 
-def query_files(query_req):
+def query_files_core(query_req):
     reply = do_http_post(query_req.to_xml(), query_req.project, 'job_file.php')
     return reply
 
@@ -251,7 +251,7 @@ def query_files(query_req):
 # query_files() to find what files aren't already on server
 # upload_files() to upload them
 #
-def upload_files(upload_files_req):
+def upload_files_core(upload_files_req):
     query_req = QUERY_FILES_REQ()
     query_req.authenticator = upload_files_req.authenticator
     query_req.batch_id = upload_files_req.batch_id
