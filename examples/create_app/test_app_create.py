@@ -3,7 +3,7 @@ import shutil
 
 filepath = os.path.dirname(os.path.realpath(__file__))
 app_cfg_file = "app_config.cfg"
-platforms_supported = ["x86_64-apple-darwin", "x86_64-pc-linux-gnu"]
+platforms_supported = ["x86_64-apple-darwin", "x86_64-pc-linux-gnu", "windows_x86_64"]
 def test():
     app_cfg_file_temp = "app_cfg_temp.cfg"
     boinc_wrapper_path = os.path.join(filepath, "wrappers")
