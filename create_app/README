@@ -1,0 +1,6 @@
+to create an application, run the command:
+
+python create_app_wrapper.py <app config file> --platforms_supported <list of platforms supported>
+
+example:
+python create_app_wrapper.py app_config.cfg --platforms_supported x86_64-apple-darwin x86_64-pc-linux-gnu
