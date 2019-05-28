@@ -11,7 +11,10 @@ app_create_script = "create_app.py"
 boinc_server_name = "boincadm@srv-bri-grid0"
 boinc_project_dir = "/home/boincadm/projects/test_new"
 
+filepath = os.path.dirname(os.path.realpath(__file__))
+
 def run_app_create_wrapper(app_cfg_file, platforms_supported): 
+    print filepath
     assert(len(platforms_supported) > 0),"no platforms specified. Provide --platform_supported argument on the command line"
     app_cfg = parse_app_cfg_file(app_cfg_file, platforms_supported)
     #create a list of all files that need to be copied on the server
@@ -22,7 +25,7 @@ def run_app_create_wrapper(app_cfg_file, platforms_supported):
     for wrapper_file in app_cfg.wrapper_names_dict.values():
         shutil.copy2(wrapper_file, temp_dir)
 
-    shutil.copy2(app_create_script, temp_dir)
+    shutil.copy2(os.path.join(filepath, app_create_script), temp_dir)
     app_cfg_file_temp = os.path.join(temp_dir, os.path.basename(app_cfg_file))
 
     #update the cfg file to have different paths for the wrappers since they're copied on the server in a different directory
