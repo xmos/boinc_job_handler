@@ -31,6 +31,8 @@ import shutil
 import random
 import hashlib
 import argparse
+import json
+import numpy as np
 from batch_process_api import *
 
 batch_state = {"BATCH_STATE_INIT":"0", "BATCH_STATE_IN_PROGRESS":"1", "BATCH_STATE_COMPLETE":"2", "BATCH_STATE_ABORTED":"3", "BATCH_STATE_RETIRED":"4"}
@@ -44,7 +46,7 @@ def get_auth():
 
 # make a batch description, to be passed to estimate_batch() or submit_batch()
 #
-def make_batch_desc(batch_cfg, app_cfg):
+def make_batch_desc(batch_cfg):
     file_info = """
         <file_info>
             <number>%s</number>
@@ -53,7 +55,7 @@ def make_batch_desc(batch_cfg, app_cfg):
     file_info_exec = """
         <file_info>
             <number>%s</number>
-            <executable/>
+            %s
         </file_info>
         """
     file_ref = """
@@ -65,24 +67,33 @@ def make_batch_desc(batch_cfg, app_cfg):
         """
     all_exec_file_info = ""
     all_exec_file_ref = ""
-    num_input_files = 1
-
+    
+    #create file descriptors for input files.
+    #These refer to files in batch_config["input_files_directory"]. There will be one job for every file in batch_config["input_files_directory"]
     input_wav_files_descriptors = []
     for filename in batch_cfg.input_files_on_server:
         file_desc = FILE_DESC()
         file_desc.mode = 'local_staged'
         file_desc.source = filename
         input_wav_files_descriptors.append(file_desc)
-
-    executable_descs = []
-    exec_count = num_input_files
-    for platform, exe_info in batch_cfg.executable_info_dict.items():
+    
+    #Create file descriptors for all other input files. These refer to the files specified in batch_config["job_application_files"]
+    #and batch_config["other_input_files"] section.
+    #Unlike, files in "input_files_directory", these files don't dictate the no. of jobs. Every job has these files as its input files
+    other_input_file_descs = []
+    exec_count = 1 #count starting from 1 since the 0th file descriptor refers to the input file that decides the job
+    for f in batch_cfg.all_application_files:
         fdesc = FILE_DESC()
         fdesc.mode = 'local_staged'
-        fdesc.source = exe_info.boinc_name
-        all_exec_file_info += file_info_exec%(str(exec_count))
-        all_exec_file_ref += file_ref%(str(exec_count), exe_info.logical_name)
-        executable_descs.append(fdesc)
+        fdesc.source = f["boinc_name"]
+        exec_str = "<executable/>"
+        if(f["executable"] == True):
+            all_exec_file_info += file_info_exec%(str(exec_count), exec_str)
+        else:
+            all_exec_file_info += file_info_exec%(str(exec_count), " ")
+
+        all_exec_file_ref += file_ref%(str(exec_count), f["logical_name"])
+        other_input_file_descs.append(fdesc)
         exec_count += 1
 
     batch = BATCH_DESC()
@@ -98,14 +109,14 @@ def make_batch_desc(batch_cfg, app_cfg):
         job = JOB_DESC()
         job.delay_bound = 60
         job.files = [input_wav_files_descriptors[i]] 
-        for exe in executable_descs:
-            job.files.append(exe)
-        #create file_ref and file_info for input file
+        for desc in other_input_file_descs:
+            job.files.append(desc)
+        #create file_ref and file_info the input file which decides the job
         all_input_file_info = "" 
         all_input_file_info += (file_info%(str(0)))
 
         all_input_file_ref = ""
-        all_input_file_ref += (file_ref%(str(0),app_cfg.input_file_logical_name))
+        all_input_file_ref += (file_ref%(str(0), batch_cfg.input_file_logical_name))
 
         if True:
             job.input_template = """
@@ -124,14 +135,15 @@ def make_batch_desc(batch_cfg, app_cfg):
     </workunit>
 </input_template>
 """ % (all_input_file_info, all_exec_file_info, all_input_file_ref, all_exec_file_ref, i+1, (i+1)*1e10)
-        job.output_template = create_output_template(batch_cfg, app_cfg)
+        job.output_template = create_output_template(batch_cfg)
         batch.jobs.append(copy.copy(job))
-
+    
+        print job.input_template
     return batch
 
 
-def submit_batch(batch_cfg, app_cfg):
-    batch = make_batch_desc(batch_cfg, app_cfg)
+def submit_batch(batch_cfg):
+    batch = make_batch_desc(batch_cfg)
     r = submit_batch_core(batch)
     print r
     if check_error(r):
@@ -174,7 +186,7 @@ def create_batch(name, app_name):
     if check_error(r):
         assert(False),"create_batch returned error"
         return
-    print 'batch ID: ', r[0].text
+    #print 'batch ID: ', r[0].text
     return r[0].text
 
 def abort_batch(batch_id):
@@ -231,7 +243,7 @@ def parse_arguments():
     return args
 
 
-def create_output_template(batch_cfg, app_cfg):
+def create_output_template(batch_cfg):
     file_info = """
         <file_info>
             <name><OUTFILE_%s/></name>
@@ -251,9 +263,9 @@ def create_output_template(batch_cfg, app_cfg):
         """
     all_file_info = ""
     all_file_ref = ""
-    for i in range(len(app_cfg.output_files_logical_names)):
+    for i in range(len(batch_cfg.output_files_list)):
         all_file_info += (file_info%(str(i)))
-        all_file_ref += (file_ref%(str(i), app_cfg.output_files_logical_names[i]))
+        all_file_ref += (file_ref%(str(i), batch_cfg.output_files_list[i]))
 
     full_output_template = """
     <output_template>
@@ -265,113 +277,128 @@ def create_output_template(batch_cfg, app_cfg):
     """%(all_file_info, all_file_ref)
     return full_output_template
 
-class executable_info(object):
-    def __init__(self, platform, local_name, boinc_name, logical_name):
-        self.platform = platform
-        self.local_name = local_name
-        self.boinc_name = boinc_name
-        self.logical_name = logical_name
+def get_application_files_from_batch_config(batch_config, category, platform):
+    platform_files = [pf for pf in batch_config[category] if pf["platform"] == platform]
+    assert(len(platform_files) <= 1)
+    if(len(platform_files) > 0):
+        return platform_files[0]["files"]
+    else:
+        return None
+
+def get_application_files_logical_names_from_app_config(app_config, platform):
+    platform_files = [pf for pf in app_config["job_application_files"] if pf["platform"] == platform]
+    assert(len(platform_files) <= 1)
+    if(len(platform_files) > 0):
+        return platform_files[0]["files"]
+    else:
+        return None
+
 
 class batch_config_params(object):
-    def __init__(self, app_name, input_dir, output_dir, output_files, executable_local_names, app_cfg):
-        self.app_cfg = app_cfg
-        self.app_name = app_name 
-        self.input_dir = input_dir
-        self.output_dir = output_dir
-        self.output_files_list = output_files
-        
+    def __init__(self, platforms_supported, batch_config):
+        self.app_name = batch_config["app_name"] 
+        self.input_dir = batch_config["input_files_directory"]
+        self.input_files_ext = batch_config["input_files_extension"] 
+        self.input_file_logical_name = batch_config["input_file_logical_name"]
+        self.output_dir = batch_config["output_files_directory"]
+        self.output_files_list = batch_config["output_filenames"]
+        '''
+        Notes on different kinds of input files:
+            There are 3 kinds of input files:
+            1. The input files present in batch_config["input_files_directory"]. These are files that determine the number of jobs.
+               There is one job per input file present in the "input_files_directory". These files are essentially what you're testing the application for.
+
+            2. The second kind are what are provided in batch_config["job_application_files"]. These are the application files that the job executes 
+               sequentially. If you look in the job.xml for the application on the server, it would mention these applications with their logical names
+               one after another. Since these applications are referred to in job.xml, their logical names present in app config should match the logical
+               names present in batch config.
+
+            3. The third kind are clubbed into a generic group batch_config["other_input_files"]. These could be input files common to all jobs. These 
+               files could be executables or simply data files. They may or may not be platform dependent. If these are platform dependent, their logical 
+               name would be different for each platform. The caller then needs to know the platform dependent name and has to be compiled accordingly.
+               If the file happens to be platform independent, it can have the same logical name on every platform. It still needs to be mentioned as an 
+               input file for every platform"
+        '''
+
         #get input file list
         self.input_files_on_server = []
-        self.local_files_list = get_files(self.input_dir) #get a list of wav files present in the input files directory
+        self.local_files_list = get_files(self.input_dir, self.input_files_ext) #get a list of files present in the input files directory
         assert(len(self.local_files_list) > 0), "no wav files in %s folder"%(self.input_dir)
-
+        
+        #the input files are stored with just their filenames on the server
         for f in self.local_files_list:
-            print f, os.path.basename(f)
             filename_on_server = os.path.basename(f);
             self.input_files_on_server.append(filename_on_server)
 
-        #make sure the no. of output file the app generates is the same as no. of output files the user expects
-        assert(len(self.output_files_list) == len(app_cfg.output_files_logical_names)),"user expects %d \
-                            output files while app generates %d"%(len(self.output_files_list), len(app_cfg.output_files_logical_names))
+        #get a list of application files
+        self.all_application_files = []
+        for plat in platforms_supported:
+            app_names_from_batch_cfg = get_application_files_from_batch_config(batch_config, "job_application_files", plat)
+            if app_names_from_batch_cfg != None:
+                self.all_application_files.append(app_names_from_batch_cfg) 
 
-        #get executable info
-        self.executable_info_dict = {}
-        #look for platforms that the app supports
-        for platform, exec_logical_name in app_cfg.executable_logical_names_dict.items(): #for every platform that the app supports
-            if platform in executable_local_names: #if the user has provided an executable for that platform
-                exec_local_name = executable_local_names[platform]
-                exec_boinc_name = os.path.basename(exec_local_name) + '_' + str(get_md5_hash_filename(exec_local_name)) 
-                exec_info = executable_info(platform, exec_local_name, exec_boinc_name, exec_logical_name)
-                self.executable_info_dict[platform] = exec_info
+            app_names_from_batch_cfg = get_application_files_from_batch_config(batch_config, "other_platform_dependent_input_files", plat)
+            if app_names_from_batch_cfg != None:
+                self.all_application_files.append(app_names_from_batch_cfg) 
 
-        assert(len(self.executable_info_dict) > 0),"no exceutable found in config file"
-
-
-class app_config_params(object):
-    def __init__(self, app_name, input_file, output_files_list, executable_logical_names):
-        self.app_name = app_name
-        self.input_file_logical_name = input_file
-        self.output_files_logical_names = output_files_list
-        self.executable_logical_names_dict = executable_logical_names
+        #get platform dependent other input files
+        common_files = [f for f in batch_config["other_common_input_files"]]
+        if(len(common_files) > 0):
+            self.all_application_files.append(common_files)
 
 
-def parse_batch_cfg_file(cfg_file, app_cfg, platforms_supported):
-    config = configparser.ConfigParser()
-    config.read(cfg_file)
-    #parse test_params
-    app_name = config.get('test_params', 'app_name')
-    input_path = config.get('test_params', 'input_files_directory')
-    output_path = config.get('test_params', 'output_files_directory')
-    output_files = config.get('test_params', 'output_filenames')
+        self.all_application_files = list(np.array(self.all_application_files).flat)
+
+        #add "boinc_name" field to the application_files info
+        for f in self.all_application_files:
+            boinc_name = os.path.basename(f["local_name"]) + '_' + str(get_md5_hash_filename(f["local_name"])) 
+            f["boinc_name"] = boinc_name
+
+
+def parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported):
+    fbatch = open(batch_cfg_file, "r")
+    batch_config = json.load(fbatch)
+    fbatch.close()
+
+    fapp = open(app_cfg_file, "r")
+    app_config = json.load(fapp)
+    fapp.close()
+
+    assert(batch_config["app_name"] == app_config["app_name"]),"app_name in test and app config files doesn't match"
     
-    executable_local_names = {} #dictionary containing executable local names
+    runnable_application = False
+    #check if we have any runnable applications
+    for plat in platforms_supported:
+        app_names_from_batch_cfg = get_application_files_from_batch_config(batch_config, "job_application_files", plat)
+        app_names_from_app_cfg = get_application_files_logical_names_from_app_config(app_config, plat)
+        if(app_names_from_batch_cfg == None and app_names_from_app_cfg != None ):
+            print ("WARNING: application supports platform {} but batch doesn't provide application files for this platform".format(plat))
+        elif(app_names_from_batch_cfg != None and app_names_from_app_cfg == None ):
+            print ("WARNING: application doesn't support platform {} but batch provides application files for this platform".format(plat))
+        elif(app_names_from_batch_cfg != None and app_names_from_app_cfg != None ):
+            assert(len(app_names_from_batch_cfg) == len(app_names_from_app_cfg)), "no. of application files provided by batch different from what app expects"
+            for i in range(len(app_names_from_app_cfg)):
+                assert(app_names_from_app_cfg[i]["logical_name"] == app_names_from_batch_cfg[i]["logical_name"]),"logical name of application file in batch and app cfg differs" 
+            runnable_application = True #if we made it here, means we have atleast one set of application files in the batch that can be run
+    assert(runnable_application == True), "no runnable application found. check warnings above"
 
-    for platform in platforms_supported:
-        executable = None
-        try:
-            executable = config.get('executables_local_names', platform)
-        except:
-            pass
-        if executable is not None:
-            executable_local_names[platform] = executable
+    return batch_config_params(platforms_supported, batch_config)
 
-    output_files_list = output_files.split()
-    return batch_config_params(app_name, input_path, output_path, output_files_list, executable_local_names, app_cfg)
-
-
-def parse_app_cfg_file(cfg_file, platforms_supported):
-    config = configparser.ConfigParser()
-    config.read(cfg_file)
-    sections = config.sections()
-    app_name = config.get('app_params', 'app_name')
-    input_file = config.get('app_params', 'input_file_logical_name')
-    output_files = config.get('app_params', 'output_files_logical_name')
-
-    executable_logical_names = {} #dictionary containing executable local names
-
-    for platform in platforms_supported:
-        executable = None
-        try:
-            executable = config.get('executable_logical_names', platform)
-        except:
-            pass
-        if executable is not None:
-            executable_logical_names[platform] = executable
-
-    output_files_list = output_files.split()
-    return app_config_params(app_name, input_file, output_files_list, executable_logical_names)
 
 '''
 Go through a directory tree and get all wav files
 '''
-def get_files(input_dir):
+def get_files(input_dir, extension):
     '''
     walk through a given directory tree structure and list out all the wav files
     '''
     file_list = []
     for root, dirs, files in os.walk(os.path.abspath(input_dir)):
         for f in files:
-            if f.endswith(".wav"):
+            if extension != None:
+                if f.endswith(extension):
+                    file_list.append(os.path.join(root,f))
+            else:
                 file_list.append(os.path.join(root,f))
     return file_list
 
@@ -404,7 +431,6 @@ def get_md5_hash_filename(filename):
     with open(filename,"rb") as f:
         bytes = f.read() # read file as bytes
         readable_hash = hashlib.md5(bytes).hexdigest();
-        print(readable_hash)
     return readable_hash
     
 
@@ -412,9 +438,9 @@ def upload_input_files(batch_cfg):
     #upload executables
     local_names = []
     boinc_names = []
-    for info in batch_cfg.executable_info_dict.values():
-        local_names.append(info.local_name)
-        boinc_names.append(info.boinc_name)
+    for f in batch_cfg.all_application_files:
+        local_names.append(f["local_name"])
+        boinc_names.append(f["boinc_name"])
 
     upload_files(local_names, boinc_names, batch_cfg.batch_id)
     
@@ -425,10 +451,10 @@ def upload_input_files(batch_cfg):
 def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
     assert(len(platforms_supported) > 0),"no platforms specified. Provide --platform_supported argument on the command line"
     
-    app_cfg = parse_app_cfg_file(app_cfg_file, platforms_supported)
-    batch_cfg = parse_batch_cfg_file(batch_cfg_file, app_cfg, platforms_supported)
+    batch_cfg = parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported)
 
-    assert(batch_cfg.app_name == app_cfg.app_name),"app_name in test and app config files doesn't match"
+    return
+
     if os.path.exists(batch_cfg.output_dir):
         shutil.rmtree(batch_cfg.output_dir)
     os.makedirs(batch_cfg.output_dir)
@@ -441,7 +467,7 @@ def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
     print('created batch ',batch_cfg.batch_id)
 
     upload_input_files(batch_cfg)
-    submit_batch(batch_cfg, app_cfg)
+    submit_batch(batch_cfg)
     
     query_return = query_batch(batch_cfg.batch_id) 
     status = query_return.find('state').text
