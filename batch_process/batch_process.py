@@ -25,7 +25,6 @@
 
 import os
 import sys
-import configparser
 import time
 import shutil
 import random
