@@ -1,0 +1,2 @@
+this is the first input file.
+We're going to test a boinc copy file application with it.

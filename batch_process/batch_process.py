@@ -329,24 +329,25 @@ class batch_config_params(object):
             filename_on_server = os.path.basename(f);
             self.input_files_on_server.append(filename_on_server)
 
-        #get a list of application files
         self.all_application_files = []
         for plat in platforms_supported:
+            #get a list of job application files
             app_names_from_batch_cfg = get_application_files_from_batch_config(batch_config, "job_application_files", plat)
             if app_names_from_batch_cfg != None:
-                self.all_application_files.append(app_names_from_batch_cfg) 
-
+                for x in app_names_from_batch_cfg:
+                    self.all_application_files.append(x) 
+            
+            #get a list of other platform dependent application files
             app_names_from_batch_cfg = get_application_files_from_batch_config(batch_config, "other_platform_dependent_input_files", plat)
             if app_names_from_batch_cfg != None:
-                self.all_application_files.append(app_names_from_batch_cfg) 
+                for x in app_names_from_batch_cfg:
+                    self.all_application_files.append(x) 
 
-        #get platform dependent other input files
+        #get platform independent input files
         common_files = [f for f in batch_config["other_common_input_files"]]
         if(len(common_files) > 0):
-            self.all_application_files.append(common_files)
-
-
-        self.all_application_files = list(np.array(self.all_application_files).flat)
+            for x in common_files:
+                self.all_application_files.append(x)
 
         #add "boinc_name" field to the application_files info
         for f in self.all_application_files:
@@ -374,6 +375,7 @@ def parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported):
             print ("WARNING: application supports platform {} but batch doesn't provide application files for this platform".format(plat))
         elif(app_names_from_batch_cfg != None and app_names_from_app_cfg == None ):
             print ("WARNING: application doesn't support platform {} but batch provides application files for this platform".format(plat))
+        #TODO: fix this so that we support cases where some application files are provided during app_create and some provided during batch_process
         elif(app_names_from_batch_cfg != None and app_names_from_app_cfg != None ):
             assert(len(app_names_from_batch_cfg) == len(app_names_from_app_cfg)), "no. of application files provided by batch different from what app expects"
             for i in range(len(app_names_from_app_cfg)):
@@ -451,8 +453,6 @@ def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
     assert(len(platforms_supported) > 0),"no platforms specified. Provide --platform_supported argument on the command line"
     
     batch_cfg = parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported)
-
-    return
 
     if os.path.exists(batch_cfg.output_dir):
         shutil.rmtree(batch_cfg.output_dir)

@@ -1,0 +1,32 @@
+{
+    "app_name": "copyfile_test_app",
+    "app_user_friendly_name": "test app that runs copyfile followed by countwords",
+    "python_wrapper_file":
+    [
+        {"platform":"x86_64-apple-darwin", "filename":"wrappers/wrapper_26014_x86_64-apple-darwin"},
+        {"platform":"x86_64-pc-linux-gnu", "filename":"wrappers/wrapper_26014_x86_64-pc-linux-gnu"},
+        {"platform":"windows_x86_64", "filename":"wrappers/wrapper_26016_windows_x86_64.exe"}
+    ],
+    "job_application_files":
+    [
+        {
+            "platform": "x86_64-apple-darwin",
+            "files":
+            [
+                {"logical_name": "app_copyfile_mac", "physical_name": null},
+                {"logical_name": "app_countwords_mac", "physical_name": null}
+            ]
+        },
+        {
+            "platform": "x86_64-pc-linux-gnu",
+            "files":
+            [
+                {"logical_name": "app_copyfile_linux", "physical_name": null},
+                {"logical_name": "app_countwords_linux", "physical_name": null}
+            ]
+        }
+    ],
+    "other_input_files":
+    [
+    ]
+}

@@ -2,19 +2,29 @@ import os
 import subprocess
 import shutil
 import json
-from create_app import app_config_params, parse_app_cfg_file
-from create_app import parse_arguments
+import argparse
 
 temp_dir="temp_create_app_files"
 app_create_script = "create_app.py"
-#boinc_server_name = "boincadm@boinc-server.xmos.com"
-#boinc_project_dir = "/home/boincadm/projects/hellopython"
-boinc_server_name = "boincadm@srv-bri-grid0"
-boinc_project_dir = "/home/boincadm/projects/test_new"
 
 filepath = os.path.dirname(os.path.realpath(__file__))
 
-def run_app_create_wrapper(app_cfg_file, platforms_supported): 
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("app_cfg_file", help="app config file",)
+    parser.add_argument("server_details_file", help="file containing server name and project name",)
+    parser.add_argument("--platforms_supported", nargs="*",type=str,default=[])
+    parser.parse_args()
+    args = parser.parse_args()
+    return args
+
+def get_server_details(server_file):
+    with open(server_file, "r") as f:
+        boinc_server_name = (f.readline()).strip()
+        boinc_project_dir = (f.readline()).strip()
+    return [boinc_server_name, boinc_project_dir]
+
+def run_app_create_wrapper(app_cfg_file, server_details_file, platforms_supported): 
     assert(len(platforms_supported) > 0),"no platforms specified. Provide --platform_supported argument on the command line"
 
     #create a list of all files that need to be copied on the server
@@ -51,7 +61,8 @@ def run_app_create_wrapper(app_cfg_file, platforms_supported):
     with open(app_cfg_file_temp, "w") as fd:
         json.dump(app_config, fd)
         fd.close()
-
+    
+    boinc_server_name, boinc_project_dir = get_server_details(server_details_file)
     #copy temp_dir on the server
     os.system("scp -p -r {} {}:{}".format(temp_dir, boinc_server_name, boinc_project_dir))
 
@@ -65,4 +76,4 @@ def run_app_create_wrapper(app_cfg_file, platforms_supported):
 
 if __name__ == "__main__":
     args = parse_arguments()
-    run_app_create_wrapper(args.app_cfg_file, args.platforms_supported)
+    run_app_create_wrapper(args.app_cfg_file, args.server_details_file, args.platforms_supported)

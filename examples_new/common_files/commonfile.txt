@@ -1,0 +1,3 @@
+This is text from the common file.
+It should show up on top of the output file.
+
