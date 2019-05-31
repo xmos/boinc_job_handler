@@ -28,40 +28,6 @@ def parse_app_cfg_file(app_cfg_file, platforms_supported):
     app_config = json.load(fapp)
     fapp.close()
     return app_config
-'''
-    config = configparser.ConfigParser()
-    config.read(cfg_file)
-    sections = config.sections()
-    app_name = config.get('app_params', 'app_name')
-    app_desc = config.get('app_params', 'app_desc')
-    input_file = config.get('app_params', 'input_file_logical_name')
-    output_files = config.get('app_params', 'output_files_logical_name')
-
-    executable_logical_names = {} #dictionary containing executable local names
-    wrapper_names = {}
-
-    for platform in platforms_supported:
-        executable = None
-        try:
-            executable = config.get('executable_logical_names', platform)
-        except:
-            pass
-        if executable is not None:
-            executable_logical_names[platform] = executable
-
-        wrapper = None
-        try:
-            wrapper = config.get('boinc_python_wrappers', platform)
-        except:
-            pass
-        if wrapper is not None:
-            wrapper_names[platform] = wrapper
-
-
-    output_files_list = output_files.split()
-    return app_config_params(app_name, app_desc, input_file, output_files_list, executable_logical_names, wrapper_names)
-    '''
-
 
 def create_app(app_cfg_file, platforms_supported):
     job_info = """
