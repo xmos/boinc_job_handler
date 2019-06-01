@@ -26,9 +26,18 @@
         }
     ],
     "other_platform_dependent_input_files":
-    [],
+    [
+        {
+            "platform": "x86_64-pc-linux-gnu",
+            "files":
+            [
+                {"local_name": "executables/dummy_test_mac", "executable": true, "logical_name": "dummy_test_mac"}
+            ]
+        }
+    ],
     "other_common_input_files":
     [
-        {"local_name": "common_files/commonfile.txt", "executable": false, "logical_name": "common.txt"}
+        {"local_name": "common_files/commonfile.txt", "executable": false, "logical_name": "common.txt"},
+        {"local_name": "common_files/foo.txt", "executable": false, "logical_name": "foo.txt"}
     ]
 }
