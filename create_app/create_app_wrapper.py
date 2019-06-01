@@ -45,13 +45,13 @@ def run_app_create_wrapper(app_cfg_file, server_details_file, platforms_supporte
     for app_files in app_config["job_application_files"]:
         for f in app_files["files"]:
             if f["physical_name"] != None:
-                shutil.copy2(f["filename"], temp_dir)
+                shutil.copy2(f["physical_name"], temp_dir)
                 f["physical_name"] = os.path.basename(f["physical_name"])
 
     for app_files in app_config["other_input_files"]:
         for f in app_files["files"]:
             if f["physical_name"] != None:
-                shutil.copy2(f["filename"], temp_dir)
+                shutil.copy2(f["physical_name"], temp_dir)
                 f["physical_name"] = os.path.basename(f["physical_name"])
 
 

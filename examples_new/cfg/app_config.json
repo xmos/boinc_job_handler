@@ -1,5 +1,5 @@
 {
-    "app_name": "copyfile_test_app",
+    "app_name": "copyfile_test_app_2",
     "app_user_friendly_name": "test app that runs copyfile followed by countwords",
     "python_wrapper_file":
     [
@@ -14,7 +14,8 @@
             "files":
             [
                 {"logical_name": "app_copyfile_mac", "physical_name": null},
-                {"logical_name": "app_countwords_mac", "physical_name": null}
+                {"logical_name": "app_countwords_mac", "physical_name": null},
+                {"logical_name": "app_count_freq", "physical_name": "executables/count_freq_app_mac"}
             ]
         },
         {

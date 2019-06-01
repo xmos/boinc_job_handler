@@ -59,7 +59,8 @@ def create_app(app_cfg_file, platforms_supported):
     file_info = """
        <file>
           <physical_name>%s</physical_name>
-          <logical_name>job.xml</logical_name>
+          <logical_name>%s</logical_name>
+          <copy_file/>
        </file>
     """
 
@@ -138,7 +139,10 @@ def create_app(app_cfg_file, platforms_supported):
         version_files_str = ""
         if(len(plat_plus_job_app_files) > 0):
             for pf in plat_plus_job_app_files[0]["files"]: #accessing index 0, since each platform is mentioned only once
+                print pf
                 if(pf["physical_name"] != None):
+                    print pf["physical_name"]
+                    print pf["logical_name"]
                     version_files_str += (file_info%(pf["physical_name"], pf["logical_name"]))
 
         if(len(plat_plus_other_input_files) > 0):

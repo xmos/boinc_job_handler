@@ -135,6 +135,7 @@ def make_batch_desc(batch_cfg):
 </input_template>
 """ % (all_input_file_info, all_exec_file_info, all_input_file_ref, all_exec_file_ref, i+1, (i+1)*1e10)
         job.output_template = create_output_template(batch_cfg)
+        print job.output_template
         batch.jobs.append(copy.copy(job))
     
         print job.input_template
@@ -282,15 +283,15 @@ def get_application_files_from_batch_config(batch_config, category, platform):
     if(len(platform_files) > 0):
         return platform_files[0]["files"]
     else:
-        return None
+        return []
 
-def get_application_files_logical_names_from_app_config(app_config, platform):
+def get_application_files_from_app_config(app_config, platform):
     platform_files = [pf for pf in app_config["job_application_files"] if pf["platform"] == platform]
     assert(len(platform_files) <= 1)
     if(len(platform_files) > 0):
         return platform_files[0]["files"]
     else:
-        return None
+        return []
 
 
 class batch_config_params(object):
@@ -333,13 +334,13 @@ class batch_config_params(object):
         for plat in platforms_supported:
             #get a list of job application files
             app_names_from_batch_cfg = get_application_files_from_batch_config(batch_config, "job_application_files", plat)
-            if app_names_from_batch_cfg != None:
+            if len(app_names_from_batch_cfg) > 0:
                 for x in app_names_from_batch_cfg:
                     self.all_application_files.append(x) 
             
             #get a list of other platform dependent application files
             app_names_from_batch_cfg = get_application_files_from_batch_config(batch_config, "other_platform_dependent_input_files", plat)
-            if app_names_from_batch_cfg != None:
+            if len(app_names_from_batch_cfg) > 0:
                 for x in app_names_from_batch_cfg:
                     self.all_application_files.append(x) 
 
@@ -370,17 +371,27 @@ def parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported):
     #check if we have any runnable applications
     for plat in platforms_supported:
         app_names_from_batch_cfg = get_application_files_from_batch_config(batch_config, "job_application_files", plat)
-        app_names_from_app_cfg = get_application_files_logical_names_from_app_config(app_config, plat)
-        if(app_names_from_batch_cfg == None and app_names_from_app_cfg != None ):
-            print ("WARNING: application supports platform {} but batch doesn't provide application files for this platform".format(plat))
-        elif(app_names_from_batch_cfg != None and app_names_from_app_cfg == None ):
+        app_names_from_app_cfg = get_application_files_from_app_config(app_config, plat)
+
+        if(len(app_names_from_batch_cfg) > 0 and len(app_names_from_app_cfg) == 0 ):
             print ("WARNING: application doesn't support platform {} but batch provides application files for this platform".format(plat))
-        #TODO: fix this so that we support cases where some application files are provided during app_create and some provided during batch_process
-        elif(app_names_from_batch_cfg != None and app_names_from_app_cfg != None ):
-            assert(len(app_names_from_batch_cfg) == len(app_names_from_app_cfg)), "no. of application files provided by batch different from what app expects"
-            for i in range(len(app_names_from_app_cfg)):
-                assert(app_names_from_app_cfg[i]["logical_name"] == app_names_from_batch_cfg[i]["logical_name"]),"logical name of application file in batch and app cfg differs" 
-            runnable_application = True #if we made it here, means we have atleast one set of application files in the batch that can be run
+        else:
+            #for every job application in app_config, for which physical_name is None (means, executable not on server), make sure that the batch config provides an executable file
+            for app in app_names_from_app_cfg:
+                if(app["physical_name"] == None): #executable not present on server
+                    index = [i for i in range(len(app_names_from_batch_cfg)) if app_names_from_batch_cfg[i]["logical_name"] == app["logical_name"]]
+                    if len(index) == 0:
+                        print("for platform {}, app with logical name {} has no corresponding physical file".format(plat, app["logical_name"]))
+                        assert(False)
+                    runnable_application = True 
+
+                else: #executable present on server
+                    index = [i for i in range(len(app_names_from_batch_cfg)) if app_names_from_batch_cfg[i]["logical_name"] == app["logical_name"]]
+                    if len(index) != 0:
+                        print("for platform {}, app with logical name {} has physical file on the server ({}) as well as in the batch ({}) ".format(plat, app["logical_name"], app["physical_name"], app_names_from_batch_cfg[i[0]]["physical_name"]))
+                        assert(False)
+                    runnable_application = True 
+
     assert(runnable_application == True), "no runnable application found. check warnings above"
 
     return batch_config_params(platforms_supported, batch_config)
