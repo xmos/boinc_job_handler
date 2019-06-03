@@ -1,6 +1,6 @@
 
 {
-    "app_name": "copyfile_test_app_2",
+    "app_name": "copyfile_test_app_4",
     "input_files_directory": "./input_files",
     "input_files_extension": ".txt",
     "input_file_logical_name": "input.txt",

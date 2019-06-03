@@ -48,12 +48,16 @@ def run_app_create_wrapper(app_cfg_file, server_details_file, platforms_supporte
                 shutil.copy2(f["physical_name"], temp_dir)
                 f["physical_name"] = os.path.basename(f["physical_name"])
 
-    for app_files in app_config["other_input_files"]:
+    for app_files in app_config["other_platform_dependent_input_files"]:
         for f in app_files["files"]:
             if f["physical_name"] != None:
                 shutil.copy2(f["physical_name"], temp_dir)
                 f["physical_name"] = os.path.basename(f["physical_name"])
-
+    
+    for common_file in app_config["other_common_input_files"]:
+        if common_file["physical_name"] != None:
+            shutil.copy2(common_file["physical_name"], temp_dir)
+            common_file["physical_name"] = os.path.basename(common_file["physical_name"])
 
     app_cfg_file_temp = os.path.join(temp_dir, os.path.basename(app_cfg_file))
     #print app_config

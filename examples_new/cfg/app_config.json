@@ -1,5 +1,5 @@
 {
-    "app_name": "copyfile_test_app_2",
+    "app_name": "copyfile_test_app_4",
     "app_user_friendly_name": "test app that runs copyfile followed by countwords",
     "python_wrapper_file":
     [
@@ -28,7 +28,7 @@
             ]
         }
     ],
-    "other_input_files":
+    "other_platform_dependent_input_files":
     [
         {
             "platform": "x86_64-apple-darwin", 
@@ -44,5 +44,9 @@
                 {"logical_name": "app_dummy", "physical_name": "executables/dummy_exec_on_server_linux"}
             ]
         }
+    ],
+    "other_common_input_files":
+    [
+        {"logical_name": "common_file_on_server.txt", "physical_name": "common_files/common_file_on_server.txt"}
     ]
 }

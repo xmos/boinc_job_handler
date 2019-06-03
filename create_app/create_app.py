@@ -112,12 +112,17 @@ def create_app(app_cfg_file, platforms_supported):
                     shutil.copy2(f["physical_name"], plat_dir)
 
         #copy any other input files 
-        plat_plus_other_input_files = [pf for pf in app_cfg["other_input_files"] if pf["platform"] == plat]
+        plat_plus_other_input_files = [pf for pf in app_cfg["other_platform_dependent_input_files"] if pf["platform"] == plat]
         assert(len(plat_plus_other_input_files) <= 1) #each platform mentioned only once
         if(len(plat_plus_other_input_files) > 0):
             for f in plat_plus_other_input_files[0]["files"]:
                 assert(f["physical_name"] != None), "physical file not specified for a file provided as input to app"
                 shutil.copy2(f["physical_name"], plat_dir)
+
+        other_common_files = [f for f in app_cfg["other_common_input_files"]]
+        for f in other_common_files:
+            assert(f["physical_name"] != None), "physical file not specified to a file that needs to be copied on server"
+            shutil.copy2(f["physical_name"], plat_dir)
         
         #write job.xml file
         job_task_str = ""
@@ -149,6 +154,9 @@ def create_app(app_cfg_file, platforms_supported):
             for pf in plat_plus_other_input_files[0]["files"]:
                 if(pf["physical_name"] != None):
                     version_files_str += (file_info%(pf["physical_name"], pf["logical_name"]))
+
+        for f in other_common_files: 
+            version_files_str += (file_info%(f["physical_name"], f["logical_name"]))
 
         if(len(plat_plus_wrapper_file) > 0):
             version_str = version_info%(os.path.basename(plat_plus_wrapper_file[0]["filename"]), job_file_name, version_files_str)
