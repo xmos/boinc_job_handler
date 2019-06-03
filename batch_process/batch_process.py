@@ -69,12 +69,12 @@ def make_batch_desc(batch_cfg):
     
     #create file descriptors for input files.
     #These refer to files in batch_config["input_files_directory"]. There will be one job for every file in batch_config["input_files_directory"]
-    input_wav_files_descriptors = []
+    input_files_descriptors = []
     for filename in batch_cfg.input_files_on_server:
         file_desc = FILE_DESC()
         file_desc.mode = 'local_staged'
         file_desc.source = filename
-        input_wav_files_descriptors.append(file_desc)
+        input_files_descriptors.append(file_desc)
     
     #Create file descriptors for all other input files. These refer to the files specified in batch_config["job_application_files"]
     #and batch_config["other_input_files"] section.
@@ -104,10 +104,10 @@ def make_batch_desc(batch_cfg):
     batch.jobs = []
 
 
-    for i in range(len(input_wav_files_descriptors)):
+    for i in range(len(input_files_descriptors)):
         job = JOB_DESC()
         job.delay_bound = 60
-        job.files = [input_wav_files_descriptors[i]] 
+        job.files = [input_files_descriptors[i]] 
         for desc in other_input_file_descs:
             job.files.append(desc)
         #create file_ref and file_info the input file which decides the job
@@ -397,11 +397,11 @@ def parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported):
 
 
 '''
-Go through a directory tree and get all wav files
+Go through a directory tree and get all files with a given extension
 '''
 def get_files(input_dir, extension):
     '''
-    walk through a given directory tree structure and list out all the wav files
+    walk through a given directory tree structure and list out all files that have a given extendion
     '''
     file_list = []
     for root, dirs, files in os.walk(os.path.abspath(input_dir)):

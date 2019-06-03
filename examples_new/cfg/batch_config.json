@@ -28,7 +28,7 @@
     "other_platform_dependent_input_files":
     [
         {
-            "platform": "x86_64-pc-linux-gnu",
+            "platform": "x86_64-apple-darwin",
             "files":
             [
                 {"local_name": "executables/dummy_test_mac", "executable": true, "logical_name": "dummy_test_mac"}
