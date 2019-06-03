@@ -116,8 +116,8 @@ def create_app(app_cfg_file, platforms_supported):
         assert(len(plat_plus_other_input_files) <= 1) #each platform mentioned only once
         if(len(plat_plus_other_input_files) > 0):
             for f in plat_plus_other_input_files[0]["files"]:
-                assert(f["physical_name"] == None), "physical file not specified for a file provided as input to app"
-                shutil.copy2(f["physical_name", plat_dir])
+                assert(f["physical_name"] != None), "physical file not specified for a file provided as input to app"
+                shutil.copy2(f["physical_name"], plat_dir)
         
         #write job.xml file
         job_task_str = ""

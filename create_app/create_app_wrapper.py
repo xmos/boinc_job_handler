@@ -63,6 +63,9 @@ def run_app_create_wrapper(app_cfg_file, server_details_file, platforms_supporte
         fd.close()
     
     boinc_server_name, boinc_project_dir = get_server_details(server_details_file)
+
+    print boinc_server_name
+    print boinc_project_dir
     #copy temp_dir on the server
     os.system("scp -p -r {} {}:{}".format(temp_dir, boinc_server_name, boinc_project_dir))
 

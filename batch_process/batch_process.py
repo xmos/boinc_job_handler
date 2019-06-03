@@ -135,21 +135,21 @@ def make_batch_desc(batch_cfg):
 </input_template>
 """ % (all_input_file_info, all_exec_file_info, all_input_file_ref, all_exec_file_ref, i+1, (i+1)*1e10)
         job.output_template = create_output_template(batch_cfg)
-        print job.output_template
+        #print job.output_template
         batch.jobs.append(copy.copy(job))
     
-        print job.input_template
+        #print job.input_template
     return batch
 
 
 def submit_batch(batch_cfg):
     batch = make_batch_desc(batch_cfg)
     r = submit_batch_core(batch)
-    print r
+    #print r
     if check_error(r):
         assert False, "submit_batch returned error"
         return
-    print 'batch ID: ', r[0].text
+    #print 'batch ID: ', r[0].text
 
 
 def query_batch(id):
@@ -213,7 +213,6 @@ def upload_files(local_names, boinc_names, batch_id):
     req.batch_id = batch_id
     req.local_names = local_names
     req.boinc_names = boinc_names
-    print req.boinc_names
     r = upload_files_core(req)
     if check_error(r):
         assert(False),"upload_files returned error"
@@ -227,7 +226,7 @@ def get_output_file(job_name, file_num):
     req.instance_name = job_name
     req.file_num = file_num
     r = get_output_file_core(req)
-    print(r)
+    #print(r)
     return r
 
 

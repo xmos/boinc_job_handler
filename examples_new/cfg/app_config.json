@@ -23,11 +23,26 @@
             "files":
             [
                 {"logical_name": "app_copyfile_linux", "physical_name": null},
-                {"logical_name": "app_countwords_linux", "physical_name": null}
+                {"logical_name": "app_countwords_linux", "physical_name": null},
+                {"logical_name": "app_count_freq", "physical_name": "executables/count_freq_app_linux"}
             ]
         }
     ],
     "other_input_files":
     [
+        {
+            "platform": "x86_64-apple-darwin", 
+            "files":
+            [
+                {"logical_name": "app_dummy", "physical_name": "executables/dummy_exec_on_server_mac"}
+            ]
+        },
+        {
+            "platform": "x86_64-pc-linux-gnu", 
+            "files":
+            [
+                {"logical_name": "app_dummy", "physical_name": "executables/dummy_exec_on_server_linux"}
+            ]
+        }
     ]
 }

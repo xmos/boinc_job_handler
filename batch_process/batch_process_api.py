@@ -266,7 +266,7 @@ def upload_files_core(upload_files_req):
     boinc_names = []
     local_names = []
     for n in absent:
-        print n.text
+        #print n.text
         ind = int(n.text)
         boinc_names.append(upload_files_req.boinc_names[ind])
         local_names.append(upload_files_req.local_names[ind])
