@@ -9,6 +9,8 @@ mypy = "*"
 flake8 = "*"
 
 [packages]
+requests = "*"
+numpy = "*"
 
 [requires]
 python_version = "3.7"
