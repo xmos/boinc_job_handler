@@ -65,10 +65,10 @@ def create_app(app_cfg_file, platforms_supported):
     """
 
     app_info = """
-	<app>
-	    <name>%s</name>
-	    <user_friendly_name>%s</user_friendly_name>
-	</app>
+    <app>
+        <name>%s</name>
+        <user_friendly_name>%s</user_friendly_name>
+    </app>
     """
     app_daemon = """
         <daemon>
@@ -168,15 +168,15 @@ def create_app(app_cfg_file, platforms_supported):
     #update version.xml
     print("Update project.xml")
     if new_ver is "1.0":
-    	app_info_str = app_info%(app_cfg["app_name"], app_cfg["app_user_friendly_name"])
-    	with open(os.path.join(root_dir, "project.xml"), "r+") as fd:
-        	lines = fd.readlines()
-		strip_lines = [line.strip() for line in lines]
-        	end_index = strip_lines.index('</boinc>')
-        	lines.insert(end_index, app_info_str+'\n')
-        	fd.seek(0)
-        	fd.writelines(lines)
-        	fd.close()
+        app_info_str = app_info%(app_cfg["app_name"], app_cfg["app_user_friendly_name"])
+        with open(os.path.join(root_dir, "project.xml"), "r+") as fd:
+            lines = fd.readlines()
+            strip_lines = [line.strip() for line in lines]
+            end_index = strip_lines.index('</boinc>')
+            lines.insert(end_index, app_info_str+'\n')
+            fd.seek(0)
+            fd.writelines(lines)
+            fd.close()
 
     print("Add application")
     saved_dir = os.getcwd()
