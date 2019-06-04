@@ -380,14 +380,14 @@ def parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported):
                 if(app["physical_name"] == None): #executable not present on server
                     index = [i for i in range(len(app_names_from_batch_cfg)) if app_names_from_batch_cfg[i]["logical_name"] == app["logical_name"]]
                     if len(index) == 0:
-                        print("for platform {}, app with logical name {} has no corresponding physical file".format(plat, app["logical_name"]))
+                        print("for platform {}, app file with logical name {} has no corresponding physical file".format(plat, app["logical_name"]))
                         assert(False)
                     runnable_application = True 
 
                 else: #executable present on server
                     index = [i for i in range(len(app_names_from_batch_cfg)) if app_names_from_batch_cfg[i]["logical_name"] == app["logical_name"]]
-                    if len(index) != 0:
-                        print("for platform {}, app with logical name {} has physical file on the server ({}) as well as in the batch ({}) ".format(plat, app["logical_name"], app["physical_name"], app_names_from_batch_cfg[i[0]]["physical_name"]))
+                    if len(index) != 0: #there's a file provided in the batch with the same logical name as one already present on the server in the app directory.
+                        print("for platform {}, app file with logical name {} has physical file on the server ({}) as well as in the batch ({}) ".format(plat, app["logical_name"], app["physical_name"], app_names_from_batch_cfg[index[0]]["physical_name"]))
                         assert(False)
                     runnable_application = True 
 
