@@ -31,14 +31,14 @@
     "other_platform_dependent_input_files":
     [
         {
-            "platform": "x86_64-apple-darwin", 
+            "platform": "x86_64-apple-darwin",
             "files":
             [
                 {"logical_name": "app_dummy", "physical_name": "executables/dummy_exec_on_server_mac"}
             ]
         },
         {
-            "platform": "x86_64-pc-linux-gnu", 
+            "platform": "x86_64-pc-linux-gnu",
             "files":
             [
                 {"logical_name": "app_dummy", "physical_name": "executables/dummy_exec_on_server_linux"}

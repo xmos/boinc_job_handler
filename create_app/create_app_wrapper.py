@@ -24,7 +24,7 @@ def get_server_details(server_file):
         boinc_project_dir = (f.readline()).strip()
     return [boinc_server_name, boinc_project_dir]
 
-def run_app_create_wrapper(app_cfg_file, server_details_file, platforms_supported): 
+def run_app_create_wrapper(app_cfg_file, server_details_file, platforms_supported):
     assert(len(platforms_supported) > 0),"no platforms specified. Provide --platform_supported argument on the command line"
 
     #create a list of all files that need to be copied on the server
@@ -53,7 +53,7 @@ def run_app_create_wrapper(app_cfg_file, server_details_file, platforms_supporte
             if f["physical_name"] != None:
                 shutil.copy2(f["physical_name"], temp_dir)
                 f["physical_name"] = os.path.basename(f["physical_name"])
-    
+
     for common_file in app_config["other_common_input_files"]:
         if common_file["physical_name"] != None:
             shutil.copy2(common_file["physical_name"], temp_dir)
@@ -65,7 +65,7 @@ def run_app_create_wrapper(app_cfg_file, server_details_file, platforms_supporte
     with open(app_cfg_file_temp, "w") as fd:
         json.dump(app_config, fd)
         fd.close()
-    
+
     boinc_server_name, boinc_project_dir = get_server_details(server_details_file)
 
     print boinc_server_name
@@ -74,7 +74,7 @@ def run_app_create_wrapper(app_cfg_file, server_details_file, platforms_supporte
     os.system("scp -p -r {} {}:{}".format(temp_dir, boinc_server_name, boinc_project_dir))
 
     #execute the app_create_script on the server
-    platforms_supported_str = ' '.join(platforms_supported) 
+    platforms_supported_str = ' '.join(platforms_supported)
     app_create_exec_dir = os.path.join(boinc_project_dir, temp_dir)
     os.system("ssh {} \"cd {} ; python {} {} --platforms_supported {}\"".format(boinc_server_name, app_create_exec_dir, app_create_script, os.path.basename(app_cfg_file_temp), platforms_supported_str))
 
