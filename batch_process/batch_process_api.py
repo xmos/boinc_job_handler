@@ -212,7 +212,7 @@ def submit_batch_core(req):
 #
 def check_error(response):
     if response.find('error') is not None:
-         print 'BOINC server error: ', response.find('error').find('error_msg').text
+         print('BOINC server error: ', response.find('error').find('error_msg').text)
          return True
 
 ############ FILE MANAGEMENT API ##############
@@ -262,7 +262,7 @@ def upload_files_core(upload_files_req):
         return reply
 
     absent = reply.find('absent_files').findall('file')
-    print 'query files succeeded; ',len(absent), ' files need upload'
+    print('query files succeeded; ', len(absent), ' files need upload')
     boinc_names = []
     local_names = []
     for n in absent:
