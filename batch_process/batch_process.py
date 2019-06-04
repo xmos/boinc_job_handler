@@ -196,7 +196,7 @@ def abort_batch(batch_id):
     r = abort_batch_core(req)
     if check_error(r):
         return
-    print 'success'
+    print('success')
 
 def retire_batch(batch_id):
     req = REQUEST()
@@ -217,7 +217,7 @@ def upload_files(local_names, boinc_names, batch_id):
     if check_error(r):
         assert(False),"upload_files returned error"
         return
-    print 'upload_files: success'
+    print('upload_files: success')
 
 
 def get_output_file(job_name, file_num):
@@ -487,10 +487,10 @@ def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
     #wait for batch to complete
     while status == batch_state["BATCH_STATE_INIT"]  or status == batch_state["BATCH_STATE_IN_PROGRESS"]:
         time.sleep(5)
-        print 'batch_id %s query status'%(batch_cfg.batch_id)
+        print('batch_id %s query status'%(batch_cfg.batch_id))
         query_return = query_batch(batch_cfg.batch_id)
         status = query_return.find('state').text
-        print 'batch_id %s status is %s'%(batch_cfg.batch_id, status)
+        print('batch_id %s status is %s'%(batch_cfg.batch_id, status))
 
     assert(status == batch_state["BATCH_STATE_COMPLETE"]), "batch completed with invalid status %s"%(status)
 

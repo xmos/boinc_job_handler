@@ -87,7 +87,7 @@ def create_app(app_cfg_file, platforms_supported):
         existing_vers = [float(y) for y in imm_subdirs]
         new_ver = str(max(existing_vers) + 1.0)
 
-    print new_ver
+    print(new_ver)
     version_dir = os.path.join(path_to_app, new_ver)
     os.makedirs(version_dir)
 
@@ -144,10 +144,10 @@ def create_app(app_cfg_file, platforms_supported):
         version_files_str = ""
         if(len(plat_plus_job_app_files) > 0):
             for pf in plat_plus_job_app_files[0]["files"]: #accessing index 0, since each platform is mentioned only once
-                print pf
+                print(pf)
                 if(pf["physical_name"] != None):
-                    print pf["physical_name"]
-                    print pf["logical_name"]
+                    print(pf["physical_name"])
+                    print(pf["logical_name"])
                     version_files_str += (file_info%(pf["physical_name"], pf["logical_name"]))
 
         if(len(plat_plus_other_input_files) > 0):
