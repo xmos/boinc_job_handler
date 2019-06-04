@@ -1,0 +1,18 @@
+to create and submit a batch, run the command:
+
+python batch_process.py <app config file> <batch config file> <server auth file> --platforms_supported <list of supported platforms>
+
+example:
+python batch_process.py app_config.cfg batch_config.cfg auth_server --platforms_supported x86_64-apple-darwin x86_64-pc-linux-gnu
+
+submit_api_test will do the following:
+ - Create a new batch
+ - If the input and executable files are not on the server, upload them to the server
+ - Create job input and output templates. There would be one job per input file that is present in the input_files_directory specified in the batch config file.
+ - Submit the batch for execution and wait for it to complete.
+ - Once the batch completes, download the output files for all jobs.
+ - In the output_files_directory specified in the batch config file, create subdirectories (one per input file, since there is one job per input file) and copy the output files   for every job in its corresponding subdirectory.
+ - Retire the batch.
+
+
+Please refer to the example in examples/create_batch/cfg for examples of config files

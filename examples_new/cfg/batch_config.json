@@ -1,0 +1,43 @@
+
+{
+    "app_name": "copyfile_test_app_4",
+    "input_files_directory": "./input_files",
+    "input_files_extension": ".txt",
+    "input_file_logical_name": "input.txt",
+    "output_files_directory": "./output_files",
+    "output_filenames": ["output.txt", "word_count.txt", "word_freq.txt"],
+    "job_application_files":
+    [
+        {
+            "platform": "x86_64-apple-darwin",
+            "files" :
+            [
+                {"local_name": "executables/copyfile_test_mac", "executable": true, "logical_name": "app_copyfile_mac"},
+                {"local_name": "executables/countwords_test_mac", "executable": true, "logical_name": "app_countwords_mac"}
+            ]
+        },
+        {
+            "platform": "x86_64-pc-linux-gnu",
+            "files" :
+            [
+                {"local_name": "executables/copyfile_test_linux", "executable": true, "logical_name": "app_copyfile_linux"},
+                {"local_name": "executables/countwords_test_linux", "executable": true, "logical_name": "app_countwords_linux"}
+            ]
+        }
+    ],
+    "other_platform_dependent_input_files":
+    [
+        {
+            "platform": "x86_64-apple-darwin",
+            "files":
+            [
+                {"local_name": "executables/dummy_test_mac", "executable": true, "logical_name": "dummy_test_mac"}
+            ]
+        }
+    ],
+    "other_common_input_files":
+    [
+        {"local_name": "common_files/commonfile.txt", "executable": false, "logical_name": "common.txt"},
+        {"local_name": "common_files/foo.txt", "executable": false, "logical_name": "foo.txt"}
+    ]
+}

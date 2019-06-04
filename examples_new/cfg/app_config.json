@@ -1,0 +1,52 @@
+{
+    "app_name": "copyfile_test_app_4",
+    "app_user_friendly_name": "test app that runs copyfile followed by countwords",
+    "python_wrapper_file":
+    [
+        {"platform":"x86_64-apple-darwin", "filename":"wrappers/wrapper_26014_x86_64-apple-darwin"},
+        {"platform":"x86_64-pc-linux-gnu", "filename":"wrappers/wrapper_26014_x86_64-pc-linux-gnu"},
+        {"platform":"windows_x86_64", "filename":"wrappers/wrapper_26016_windows_x86_64.exe"}
+    ],
+    "job_application_files":
+    [
+        {
+            "platform": "x86_64-apple-darwin",
+            "files":
+            [
+                {"logical_name": "app_copyfile_mac", "physical_name": null},
+                {"logical_name": "app_countwords_mac", "physical_name": null},
+                {"logical_name": "app_count_freq", "physical_name": "executables/count_freq_app_mac"}
+            ]
+        },
+        {
+            "platform": "x86_64-pc-linux-gnu",
+            "files":
+            [
+                {"logical_name": "app_copyfile_linux", "physical_name": null},
+                {"logical_name": "app_countwords_linux", "physical_name": null},
+                {"logical_name": "app_count_freq", "physical_name": "executables/count_freq_app_linux"}
+            ]
+        }
+    ],
+    "other_platform_dependent_input_files":
+    [
+        {
+            "platform": "x86_64-apple-darwin", 
+            "files":
+            [
+                {"logical_name": "app_dummy", "physical_name": "executables/dummy_exec_on_server_mac"}
+            ]
+        },
+        {
+            "platform": "x86_64-pc-linux-gnu", 
+            "files":
+            [
+                {"logical_name": "app_dummy", "physical_name": "executables/dummy_exec_on_server_linux"}
+            ]
+        }
+    ],
+    "other_common_input_files":
+    [
+        {"logical_name": "common_file_on_server.txt", "physical_name": "common_files/common_file_on_server.txt"}
+    ]
+}
