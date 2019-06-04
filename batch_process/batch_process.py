@@ -322,7 +322,7 @@ class batch_config_params(object):
         #get input file list
         self.input_files_on_server = []
         self.local_files_list = get_files(self.input_dir, self.input_files_ext) #get a list of files present in the input files directory
-        assert(len(self.local_files_list) > 0), "no wav files in %s folder"%(self.input_dir)
+        assert(len(self.local_files_list) > 0), "no input files in %s folder"%(self.input_dir)
 
         #the input files are stored with just their filenames on the server
         for f in self.local_files_list:
