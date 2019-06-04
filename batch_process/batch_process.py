@@ -32,6 +32,7 @@ import hashlib
 import argparse
 import json
 import numpy as np
+import re
 from batch_process_api import *
 
 batch_state = {"BATCH_STATE_INIT":"0", "BATCH_STATE_IN_PROGRESS":"1", "BATCH_STATE_COMPLETE":"2", "BATCH_STATE_ABORTED":"3", "BATCH_STATE_RETIRED":"4"}
@@ -106,8 +107,9 @@ def make_batch_desc(batch_cfg):
 
     for i in range(len(input_files_descriptors)):
         job = JOB_DESC()
-        job.delay_bound = 60
+        job.delay_bound = 1800 #create another instance of the job if it is not completed in 1800 seconds
         job.files = [input_files_descriptors[i]] 
+        print job.files[0].source
         for desc in other_input_file_descs:
             job.files.append(desc)
         #create file_ref and file_info the input file which decides the job
@@ -129,8 +131,8 @@ def make_batch_desc(batch_cfg):
         <min_quorum>1</min_quorum>
         <credit>%d</credit>
         <rsc_fpops_est>%f</rsc_fpops_est>
-        <rsc_memory_bound>130e6</rsc_memory_bound>
-        <rsc_disk_bound>130e6</rsc_disk_bound>
+        <rsc_memory_bound>1000e6</rsc_memory_bound>
+        <rsc_disk_bound>1000e6</rsc_disk_bound>
     </workunit>
 </input_template>
 """ % (all_input_file_info, all_exec_file_info, all_input_file_ref, all_exec_file_ref, i+1, (i+1)*1e10)
@@ -248,7 +250,7 @@ def create_output_template(batch_cfg):
             <name><OUTFILE_%s/></name>
             <generated_locally/>
             <upload_when_present/>
-            <max_nbytes>125e6</max_nbytes>
+            <max_nbytes>1000e6</max_nbytes>
             <url><UPLOAD_URL/></url>
         </file_info>
         """
@@ -400,17 +402,24 @@ def parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported):
 Go through a directory tree and get all files with a given extension
 '''
 def get_files(input_dir, extension):
+    file_filter = "^[A-Za-z0-9].*\.wav"
     '''
     walk through a given directory tree structure and list out all files that have a given extendion
     '''
     file_list = []
     for root, dirs, files in os.walk(os.path.abspath(input_dir)):
         for f in files:
+            '''
             if extension != None:
                 if f.endswith(extension):
                     file_list.append(os.path.join(root,f))
             else:
                 file_list.append(os.path.join(root,f))
+            '''
+            if re.search(file_filter, f):
+                file_list.append(os.path.join(root,f))
+    
+    print file_list
     return file_list
 
 '''
@@ -452,11 +461,15 @@ def upload_input_files(batch_cfg):
     for f in batch_cfg.all_application_files:
         local_names.append(f["local_name"])
         boinc_names.append(f["boinc_name"])
-
+    
+    print local_names
+    print boinc_names
     upload_files(local_names, boinc_names, batch_cfg.batch_id)
     
     #upload input files
-    upload_files(batch_cfg.local_files_list, batch_cfg.input_files_on_server, batch_cfg.batch_id)
+    for i in range(len(batch_cfg.input_files_on_server)):
+        upload_files([batch_cfg.local_files_list[i]], [batch_cfg.input_files_on_server[i]], batch_cfg.batch_id)
+        print "finished uploading file {}".format(batch_cfg.input_files_on_server[i])
 
 
 def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
