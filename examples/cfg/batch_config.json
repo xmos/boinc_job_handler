@@ -2,7 +2,7 @@
 {
     "app_name": "copyfile_test_app_4",
     "input_files_directory": "./input_files",
-    "input_files_extension": ".txt",
+    "input_files_search_pattern": ".*\.txt",
     "input_file_logical_name": "input.txt",
     "output_files_directory": "./output_files",
     "output_filenames": ["output.txt", "word_count.txt", "word_freq.txt"],

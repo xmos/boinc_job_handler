@@ -273,6 +273,7 @@ def create_output_template(batch_cfg):
         %s
         <result>
             %s
+        <report_immediately/>
         </result>
     </output_template>
     """%(all_file_info, all_file_ref)
@@ -323,7 +324,7 @@ class batch_config_params(object):
 
         #get input file list
         self.input_files_on_server = []
-        self.local_files_list = get_files(self.input_dir, self.input_files_ext) #get a list of files present in the input files directory
+        self.local_files_list = get_files(self.input_dir, self.input_files_search_pattern) #get a list of files present in the input files directory
         assert(len(self.local_files_list) > 0), "no input files in %s folder"%(self.input_dir)
 
         #the input files are stored with just their filenames on the server
@@ -401,25 +402,16 @@ def parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported):
 '''
 Go through a directory tree and get all files with a given extension
 '''
-def get_files(input_dir, extension):
-    file_filter = "^[A-Za-z0-9].*\.wav"
+def get_files(input_dir, name_match_pattern):
     '''
     walk through a given directory tree structure and list out all files that have a given extendion
     '''
     file_list = []
     for root, dirs, files in os.walk(os.path.abspath(input_dir)):
         for f in files:
-            '''
-            if extension != None:
-                if f.endswith(extension):
-                    file_list.append(os.path.join(root,f))
-            else:
-                file_list.append(os.path.join(root,f))
-            '''
-            if re.search(file_filter, f):
+            if re.search(file_filter, name_match_pattern):
                 file_list.append(os.path.join(root,f))
     
-    print file_list
     return file_list
 
 '''
