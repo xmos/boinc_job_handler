@@ -67,7 +67,7 @@ def make_batch_desc(batch_cfg):
         """
     all_exec_file_info = ""
     all_exec_file_ref = ""
-    
+
     #create file descriptors for input files.
     #These refer to files in batch_config["input_files_directory"]. There will be one job for every file in batch_config["input_files_directory"]
     input_files_descriptors = []
@@ -76,7 +76,7 @@ def make_batch_desc(batch_cfg):
         file_desc.mode = 'local_staged'
         file_desc.source = filename
         input_files_descriptors.append(file_desc)
-    
+
     #Create file descriptors for all other input files. These refer to the files specified in batch_config["job_application_files"]
     #and batch_config["other_input_files"] section.
     #Unlike, files in "input_files_directory", these files don't dictate the no. of jobs. Every job has these files as its input files
@@ -109,11 +109,11 @@ def make_batch_desc(batch_cfg):
         job = JOB_DESC()
         job.delay_bound = 1800 #create another instance of the job if it is not completed in 1800 seconds
         job.files = [input_files_descriptors[i]] 
-        print job.files[0].source
+
         for desc in other_input_file_descs:
             job.files.append(desc)
         #create file_ref and file_info the input file which decides the job
-        all_input_file_info = "" 
+        all_input_file_info = ""
         all_input_file_info += (file_info%(str(0)))
 
         all_input_file_ref = ""
@@ -139,7 +139,7 @@ def make_batch_desc(batch_cfg):
         job.output_template = create_output_template(batch_cfg)
         #print job.output_template
         batch.jobs.append(copy.copy(job))
-    
+
         #print job.input_template
     return batch
 
@@ -182,7 +182,7 @@ def create_batch(name, app_name):
     req.app_name = app_name
     req.batch_name = name
     req.expire_time = 0
-    
+
     r = create_batch_core(req)
 
     if check_error(r):
@@ -198,7 +198,7 @@ def abort_batch(batch_id):
     r = abort_batch_core(req)
     if check_error(r):
         return
-    print 'success'
+    print('success')
 
 def retire_batch(batch_id):
     req = REQUEST()
@@ -219,7 +219,7 @@ def upload_files(local_names, boinc_names, batch_id):
     if check_error(r):
         assert(False),"upload_files returned error"
         return
-    print 'upload_files: success'
+    print('upload_files: success')
 
 
 def get_output_file(job_name, file_num):
@@ -297,9 +297,9 @@ def get_application_files_from_app_config(app_config, platform):
 
 class batch_config_params(object):
     def __init__(self, platforms_supported, batch_config):
-        self.app_name = batch_config["app_name"] 
+        self.app_name = batch_config["app_name"]
         self.input_dir = batch_config["input_files_directory"]
-        self.input_files_ext = batch_config["input_files_extension"] 
+        self.input_files_ext = batch_config["input_files_extension"]
         self.input_file_logical_name = batch_config["input_file_logical_name"]
         self.output_dir = batch_config["output_files_directory"]
         self.output_files_list = batch_config["output_filenames"]
@@ -309,23 +309,23 @@ class batch_config_params(object):
             1. The input files present in batch_config["input_files_directory"]. These are files that determine the number of jobs.
                There is one job per input file present in the "input_files_directory". These files are essentially what you're testing the application for.
 
-            2. The second kind are what are provided in batch_config["job_application_files"]. These are the application files that the job executes 
+            2. The second kind are what are provided in batch_config["job_application_files"]. These are the application files that the job executes
                sequentially. If you look in the job.xml for the application on the server, it would mention these applications with their logical names
                one after another. Since these applications are referred to in job.xml, their logical names present in app config should match the logical
                names present in batch config.
 
-            3. The third kind are clubbed into a generic group batch_config["other_input_files"]. These could be input files common to all jobs. These 
-               files could be executables or simply data files. They may or may not be platform dependent. If these are platform dependent, their logical 
+            3. The third kind are clubbed into a generic group batch_config["other_input_files"]. These could be input files common to all jobs. These
+               files could be executables or simply data files. They may or may not be platform dependent. If these are platform dependent, their logical
                name would be different for each platform. The caller then needs to know the platform dependent name and has to be compiled accordingly.
-               If the file happens to be platform independent, it can have the same logical name on every platform. It still needs to be mentioned as an 
+               If the file happens to be platform independent, it can have the same logical name on every platform. It still needs to be mentioned as an
                input file for every platform"
         '''
 
         #get input file list
         self.input_files_on_server = []
         self.local_files_list = get_files(self.input_dir, self.input_files_ext) #get a list of files present in the input files directory
-        assert(len(self.local_files_list) > 0), "no wav files in %s folder"%(self.input_dir)
-        
+        assert(len(self.local_files_list) > 0), "no input files in %s folder"%(self.input_dir)
+
         #the input files are stored with just their filenames on the server
         for f in self.local_files_list:
             filename_on_server = os.path.basename(f);
@@ -337,13 +337,13 @@ class batch_config_params(object):
             app_names_from_batch_cfg = get_application_files_from_batch_config(batch_config, "job_application_files", plat)
             if len(app_names_from_batch_cfg) > 0:
                 for x in app_names_from_batch_cfg:
-                    self.all_application_files.append(x) 
-            
+                    self.all_application_files.append(x)
+
             #get a list of other platform dependent application files
             app_names_from_batch_cfg = get_application_files_from_batch_config(batch_config, "other_platform_dependent_input_files", plat)
             if len(app_names_from_batch_cfg) > 0:
                 for x in app_names_from_batch_cfg:
-                    self.all_application_files.append(x) 
+                    self.all_application_files.append(x)
 
         #get platform independent input files
         common_files = [f for f in batch_config["other_common_input_files"]]
@@ -353,7 +353,7 @@ class batch_config_params(object):
 
         #add "boinc_name" field to the application_files info
         for f in self.all_application_files:
-            boinc_name = os.path.basename(f["local_name"]) + '_' + str(get_md5_hash_filename(f["local_name"])) 
+            boinc_name = os.path.basename(f["local_name"]) + '_' + str(get_md5_hash_filename(f["local_name"]))
             f["boinc_name"] = boinc_name
 
 
@@ -367,7 +367,7 @@ def parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported):
     fapp.close()
 
     assert(batch_config["app_name"] == app_config["app_name"]),"app_name in test and app config files doesn't match"
-    
+
     runnable_application = False
     #check if we have any runnable applications
     for plat in platforms_supported:
@@ -382,16 +382,16 @@ def parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported):
                 if(app["physical_name"] == None): #executable not present on server
                     index = [i for i in range(len(app_names_from_batch_cfg)) if app_names_from_batch_cfg[i]["logical_name"] == app["logical_name"]]
                     if len(index) == 0:
-                        print("for platform {}, app with logical name {} has no corresponding physical file".format(plat, app["logical_name"]))
+                        print("for platform {}, app file with logical name {} has no corresponding physical file".format(plat, app["logical_name"]))
                         assert(False)
-                    runnable_application = True 
+                    runnable_application = True
 
                 else: #executable present on server
                     index = [i for i in range(len(app_names_from_batch_cfg)) if app_names_from_batch_cfg[i]["logical_name"] == app["logical_name"]]
-                    if len(index) != 0:
-                        print("for platform {}, app with logical name {} has physical file on the server ({}) as well as in the batch ({}) ".format(plat, app["logical_name"], app["physical_name"], app_names_from_batch_cfg[i[0]]["physical_name"]))
+                    if len(index) != 0: #there's a file provided in the batch with the same logical name as one already present on the server in the app directory.
+                        print("for platform {}, app file with logical name {} has physical file on the server ({}) as well as in the batch ({}) ".format(plat, app["logical_name"], app["physical_name"], app_names_from_batch_cfg[index[0]]["physical_name"]))
                         assert(False)
-                    runnable_application = True 
+                    runnable_application = True
 
     assert(runnable_application == True), "no runnable application found. check warnings above"
 
@@ -427,7 +427,7 @@ given a list of jobs, download output files corresponding to each job
 '''
 def download_output_files(batch_cfg, jobnames):
     num_output_files_per_job = 1
-    assert(len(jobnames) == len(batch_cfg.input_files_on_server)), "num input files (%d) != num jobs (%d)"%(len(batch_cfg.input_files_on_server), len(jobnames)) 
+    assert(len(jobnames) == len(batch_cfg.input_files_on_server)), "num input files (%d) != num jobs (%d)"%(len(batch_cfg.input_files_on_server), len(jobnames))
 
     for i in range(len(jobnames)):
         #create one output directory per job
@@ -441,7 +441,7 @@ def download_output_files(batch_cfg, jobnames):
             download_url = get_output_file(jobnames[i], str(j))
             r = requests.get(download_url)
             assert(r.status_code == requests.codes.ok),"requests.get(download_url) returns error"
-                
+
             with open(output_name, 'wb') as fd:
                 for chunk in r.iter_content():
                     fd.write(chunk)
@@ -452,7 +452,7 @@ def get_md5_hash_filename(filename):
         bytes = f.read() # read file as bytes
         readable_hash = hashlib.md5(bytes).hexdigest();
     return readable_hash
-    
+
 
 def upload_input_files(batch_cfg):
     #upload executables
@@ -465,7 +465,7 @@ def upload_input_files(batch_cfg):
     print local_names
     print boinc_names
     upload_files(local_names, boinc_names, batch_cfg.batch_id)
-    
+
     #upload input files
     for i in range(len(batch_cfg.input_files_on_server)):
         upload_files([batch_cfg.local_files_list[i]], [batch_cfg.input_files_on_server[i]], batch_cfg.batch_id)
@@ -474,7 +474,7 @@ def upload_input_files(batch_cfg):
 
 def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
     assert(len(platforms_supported) > 0),"no platforms specified. Provide --platform_supported argument on the command line"
-    
+
     batch_cfg = parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported)
 
     if os.path.exists(batch_cfg.output_dir):
@@ -490,23 +490,23 @@ def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
 
     upload_input_files(batch_cfg)
     submit_batch(batch_cfg)
-    
-    query_return = query_batch(batch_cfg.batch_id) 
+
+    query_return = query_batch(batch_cfg.batch_id)
     status = query_return.find('state').text
     jobnames = []
     for job in query_return.findall('job'):
         jobnames.append(job.find('name').text + '_' + '0')
-    
+
     #wait for batch to complete
     while status == batch_state["BATCH_STATE_INIT"]  or status == batch_state["BATCH_STATE_IN_PROGRESS"]:
         time.sleep(5)
-        print 'batch_id %s query status'%(batch_cfg.batch_id)
-        query_return = query_batch(batch_cfg.batch_id) 
+        print('batch_id %s query status'%(batch_cfg.batch_id))
+        query_return = query_batch(batch_cfg.batch_id)
         status = query_return.find('state').text
-        print 'batch_id %s status is %s'%(batch_cfg.batch_id, status)
+        print('batch_id %s status is %s'%(batch_cfg.batch_id, status))
 
     assert(status == batch_state["BATCH_STATE_COMPLETE"]), "batch completed with invalid status %s"%(status)
-    
+
     #download output files
     download_output_files(batch_cfg, jobnames)
 
