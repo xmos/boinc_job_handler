@@ -149,7 +149,7 @@ def abort_jobs(req):
 def create_batch_core(req):
     return do_http_post(req.to_xml(), req.project)
 
-def estimate_batch(req):
+def estimate_batch_core(req):
     return do_http_post(req.to_xml('estimate_batch'), req.project)
 
 def query_batch_core(req):
