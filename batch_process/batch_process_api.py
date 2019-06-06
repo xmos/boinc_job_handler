@@ -55,6 +55,8 @@ class JOB_DESC:
             xml += '<name>%s</name>\n'%self.name
         if hasattr(self, 'rsc_fpops_est'):
             xml += '<rsc_fpops_est>%f</rsc_fpops_est>\n'%self.rsc_fpops_est
+        if hasattr(self, 'rsc_fpops_bound'):
+            xml += '<rsc_fpops_bound>%f</rsc_fpops_bound>\n'%self.rsc_fpops_bound
         if hasattr(self, 'delay_bound'):
             xml += '<delay_bound>%d</delay_bound>\n'%self.delay_bound
         if hasattr(self, 'command_line'):

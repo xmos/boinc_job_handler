@@ -108,7 +108,8 @@ def make_batch_desc(batch_cfg):
     for i in range(len(input_files_descriptors)):
         job = JOB_DESC()
         job.delay_bound = batch_cfg.delay_bound #create another instance of the job if it is not completed in 'delay_bound' seconds which is a cfg param specified in the batch cfg
-        job.rsc_fops_est = batch_cfg.rsc_fops_est
+        job.rsc_fpops_est = batch_cfg.rsc_fpops_est
+        job.rsc_fpops_bound = batch_cfg.rsc_fpops_bound
         job.files = [input_files_descriptors[i]] 
 
         for desc in other_input_file_descs:
@@ -132,16 +133,17 @@ def make_batch_desc(batch_cfg):
         <min_quorum>1</min_quorum>
         <credit>%d</credit>
         <rsc_fpops_est>%d</rsc_fpops_est>
+        <rsc_fpops_bound>%d</rsc_fpops_bound>
         <rsc_memory_bound>%d</rsc_memory_bound>
         <rsc_disk_bound>%d</rsc_disk_bound>
     </workunit>
 </input_template>
-""" % (all_input_file_info, all_exec_file_info, all_input_file_ref, all_exec_file_ref, 1, int(batch_cfg.rsc_fops_est), int(batch_cfg.rsc_memory_bound), int(batch_cfg.rsc_disk_bound))
+""" % (all_input_file_info, all_exec_file_info, all_input_file_ref, all_exec_file_ref, 1, int(batch_cfg.rsc_fpops_est), int(batch_cfg.rsc_fpops_bound), int(batch_cfg.rsc_memory_bound), int(batch_cfg.rsc_disk_bound))
         job.output_template = create_output_template(batch_cfg)
-        #print job.output_template
+        #print(job.output_template)
         batch.jobs.append(copy.copy(job))
 
-        #print job.input_template
+        #print(job.input_template)
     return batch
 
 
@@ -151,17 +153,17 @@ def estimate_batch(batch_cfg):
     if check_error(r):
         assert False, "estimate_batch returned error"
         return
-    print 'estimated time: ', r[0].text, ' seconds'
+    print('estimated time: ', r[0].text, ' seconds')
 
 
 def submit_batch(batch_cfg):
     batch = make_batch_desc(batch_cfg)
     r = submit_batch_core(batch)
-    #print r
+    #print(r)
     if check_error(r):
         assert False, "submit_batch returned error"
         return
-    #print 'batch ID: ', r[0].text
+    #print('batch ID: ', r[0].text)
 
 
 def query_batch(id):
@@ -174,14 +176,14 @@ def query_batch(id):
     if check_error(r):
         assert False, "query_batch returned error"
 
-    #print ET.tostring(r)
+    #print(ET.tostring(r))
     print("\nBatch status for batch id {}:".format(id))
     print('njobs: ', r.find('njobs').text)
     print('fraction done: ', r.find('fraction_done').text)
     print('total CPU time: ', r.find('total_cpu_time').text)
     jobs_status = {}
     # ... various other fields
-    print 'jobs:'
+    print('jobs:')
     for job in r.findall('job'):
         #print('   id: ', job.find('id').text)
         #print('status: ', job.find('status').text)
@@ -206,7 +208,7 @@ def create_batch(name, app_name):
     if check_error(r):
         assert(False),"create_batch returned error"
         return
-    #print 'batch ID: ', r[0].text
+    #print('batch ID: ', r[0].text)
     return r[0].text
 
 def abort_batch(batch_id):
@@ -324,7 +326,8 @@ class batch_config_params(object):
         self.output_files_list = batch_config["output_filenames"]
         self.delay_bound = batch_config["delay_bound"] #no. of seconds before which if the scheduler doesn't get a result, it sends the job to another host
         #TODO need a way to estimate this
-        self.rsc_fops_est = batch_config["fops_estimate"] #fops estimate of a job. This controls the no. of jobs sent to the host by the scheduler. 
+        self.rsc_fpops_est = batch_config["fops_estimate"] #fops estimate of a job. This controls the no. of jobs sent to the host by the scheduler. 
+        self.rsc_fpops_bound = batch_config["fops_bound"] 
         self.rsc_memory_bound = batch_config["memory_bound"]
         self.rsc_disk_bound = batch_config["disk_bound"]
         '''
@@ -477,14 +480,12 @@ def upload_input_files(batch_cfg):
         local_names.append(f["local_name"])
         boinc_names.append(f["boinc_name"])
     
-    print local_names
-    print boinc_names
     upload_files(local_names, boinc_names, batch_cfg.batch_id)
 
     #upload input files
     for i in range(len(batch_cfg.input_files_on_server)):
         upload_files([batch_cfg.local_files_list[i]], [batch_cfg.input_files_on_server[i]], batch_cfg.batch_id)
-        print "finished uploading file {}".format(batch_cfg.input_files_on_server[i])
+        print("finished uploading file {}".format(batch_cfg.input_files_on_server[i]))
 
 
 def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
