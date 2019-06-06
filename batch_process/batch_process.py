@@ -34,6 +34,7 @@ import json
 import numpy as np
 import re
 from batch_process_api import *
+import yaml
 
 batch_state = {"BATCH_STATE_INIT":"0", "BATCH_STATE_IN_PROGRESS":"1", "BATCH_STATE_COMPLETE":"2", "BATCH_STATE_ABORTED":"3", "BATCH_STATE_RETIRED":"4"}
 # read URL and auth from a file so we don't have to include it here
@@ -107,7 +108,8 @@ def make_batch_desc(batch_cfg):
 
     for i in range(len(input_files_descriptors)):
         job = JOB_DESC()
-        job.delay_bound = 1800 #create another instance of the job if it is not completed in 1800 seconds
+        job.delay_bound = batch_cfg.delay_bound #create another instance of the job if it is not completed in 1800 seconds
+        job.rsc_fops_est = batch_cfg.rsc_fops_est
         job.files = [input_files_descriptors[i]] 
 
         for desc in other_input_file_descs:
@@ -130,18 +132,27 @@ def make_batch_desc(batch_cfg):
         <target_nresults>1</target_nresults>
         <min_quorum>1</min_quorum>
         <credit>%d</credit>
-        <rsc_fpops_est>%f</rsc_fpops_est>
-        <rsc_memory_bound>1000e6</rsc_memory_bound>
-        <rsc_disk_bound>1000e6</rsc_disk_bound>
+        <rsc_fpops_est>%d</rsc_fpops_est>
+        <rsc_memory_bound>%d</rsc_memory_bound>
+        <rsc_disk_bound>%d</rsc_disk_bound>
     </workunit>
 </input_template>
-""" % (all_input_file_info, all_exec_file_info, all_input_file_ref, all_exec_file_ref, i+1, (i+1)*1e10)
+""" % (all_input_file_info, all_exec_file_info, all_input_file_ref, all_exec_file_ref, 1, int(batch_cfg.rsc_fops_est), int(batch_cfg.rsc_memory_bound), int(batch_cfg.rsc_disk_bound))
         job.output_template = create_output_template(batch_cfg)
         #print job.output_template
         batch.jobs.append(copy.copy(job))
 
         #print job.input_template
     return batch
+
+
+def estimate_batch(batch_cfg):
+    batch = make_batch_desc(batch_cfg)
+    r = estimate_batch_core(batch)
+    if check_error(r):
+        assert False, "estimate_batch returned error"
+        return
+    print 'estimated time: ', r[0].text, ' seconds'
 
 
 def submit_batch(batch_cfg):
@@ -163,17 +174,25 @@ def query_batch(id):
     r = query_batch_core(req)
     if check_error(r):
         assert False, "query_batch returned error"
-    '''
-    print ET.tostring(r)
-    print 'njobs: ', r.find('njobs').text
-    print 'fraction done: ', r.find('fraction_done').text
-    print 'total CPU time: ', r.find('total_cpu_time').text
+
+    #print ET.tostring(r)
+    print("\nBatch status:")
+    print('njobs: ', r.find('njobs').text)
+    print('fraction done: ', r.find('fraction_done').text)
+    print('total CPU time: ', r.find('total_cpu_time').text)
+    jobs_status = {}
     # ... various other fields
     print 'jobs:'
     for job in r.findall('job'):
-        print '   id: ', job.find('id').text
+        #print('   id: ', job.find('id').text)
+        #print('status: ', job.find('status').text)
+        s = job.find('status').text
+        jobs_status[s] = jobs_status.get(s, 0) + 1
         # ... various other fields
-    '''
+    
+    for k, v in jobs_status.items():
+        print("{} jobs with status {}".format(v, k))
+
     return r
 
 def create_batch(name, app_name):
@@ -250,7 +269,7 @@ def create_output_template(batch_cfg):
             <name><OUTFILE_%s/></name>
             <generated_locally/>
             <upload_when_present/>
-            <max_nbytes>1000e6</max_nbytes>
+            <max_nbytes>%d</max_nbytes>
             <url><UPLOAD_URL/></url>
         </file_info>
         """
@@ -265,8 +284,8 @@ def create_output_template(batch_cfg):
     all_file_info = ""
     all_file_ref = ""
     for i in range(len(batch_cfg.output_files_list)):
-        all_file_info += (file_info%(str(i)))
-        all_file_ref += (file_ref%(str(i), batch_cfg.output_files_list[i]))
+        all_file_info += (file_info%(str(i), int(batch_cfg.output_files_list[i]["max_nbytes"])))
+        all_file_ref += (file_ref%(str(i), batch_cfg.output_files_list[i]["name"]))
 
     full_output_template = """
     <output_template>
@@ -300,10 +319,15 @@ class batch_config_params(object):
     def __init__(self, platforms_supported, batch_config):
         self.app_name = batch_config["app_name"]
         self.input_dir = batch_config["input_files_directory"]
-        self.input_files_ext = batch_config["input_files_extension"]
+        self.input_files_search_pattern = batch_config["input_files_search_pattern"]
         self.input_file_logical_name = batch_config["input_file_logical_name"]
         self.output_dir = batch_config["output_files_directory"]
         self.output_files_list = batch_config["output_filenames"]
+        self.delay_bound = batch_config["delay_bound"] #no. of seconds before which if the scheduler doesn't get a result, it sends the job to another host
+        #TODO need a way to estimate this
+        self.rsc_fops_est = batch_config["fops_estimate"] #fops estimate of a job. This controls the no. of jobs sent to the host by the scheduler. 
+        self.rsc_memory_bound = batch_config["memory_bound"]
+        self.rsc_disk_bound = batch_config["disk_bound"]
         '''
         Notes on different kinds of input files:
             There are 3 kinds of input files:
@@ -409,7 +433,7 @@ def get_files(input_dir, name_match_pattern):
     file_list = []
     for root, dirs, files in os.walk(os.path.abspath(input_dir)):
         for f in files:
-            if re.search(file_filter, name_match_pattern):
+            if re.search(name_match_pattern, f):
                 file_list.append(os.path.join(root,f))
     
     return file_list
@@ -429,7 +453,7 @@ def download_output_files(batch_cfg, jobnames):
         os.makedirs(output_path)
 
         for j in range(len(batch_cfg.output_files_list)):
-            output_name = os.path.join(output_path, batch_cfg.output_files_list[j])
+            output_name = os.path.join(output_path, batch_cfg.output_files_list[j]["name"])
             download_url = get_output_file(jobnames[i], str(j))
             r = requests.get(download_url)
             assert(r.status_code == requests.codes.ok),"requests.get(download_url) returns error"
@@ -466,7 +490,7 @@ def upload_input_files(batch_cfg):
 
 def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
     assert(len(platforms_supported) > 0),"no platforms specified. Provide --platform_supported argument on the command line"
-
+    
     batch_cfg = parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported)
 
     if os.path.exists(batch_cfg.output_dir):
@@ -491,7 +515,7 @@ def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
 
     #wait for batch to complete
     while status == batch_state["BATCH_STATE_INIT"]  or status == batch_state["BATCH_STATE_IN_PROGRESS"]:
-        time.sleep(5)
+        time.sleep(30)
         print('batch_id %s query status'%(batch_cfg.batch_id))
         query_return = query_batch(batch_cfg.batch_id)
         status = query_return.find('state').text
