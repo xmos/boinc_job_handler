@@ -8,8 +8,8 @@
     "output_filenames": [{"name":"output.txt", "max_nbytes": 1e3}, {"name": "word_count.txt", "max_nbytes": 1e3}, {"name":"word_freq.txt", "max_nbytes":1e3}],
     "delay_bound": 60,
     "fops_estimate": 1e9,
-    "memory_bound": 10e6,
-    "disk_bound": 10e6,
+    "memory_bound": 100e6,
+    "disk_bound": 100e6,
     "job_application_files":
     [
         {

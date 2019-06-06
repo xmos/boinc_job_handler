@@ -176,7 +176,7 @@ def query_batch(id):
         assert False, "query_batch returned error"
 
     #print ET.tostring(r)
-    print("\nBatch status:")
+    print("\nBatch status for batch id {}:".format(id))
     print('njobs: ', r.find('njobs').text)
     print('fraction done: ', r.find('fraction_done').text)
     print('total CPU time: ', r.find('total_cpu_time').text)
@@ -516,10 +516,8 @@ def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
     #wait for batch to complete
     while status == batch_state["BATCH_STATE_INIT"]  or status == batch_state["BATCH_STATE_IN_PROGRESS"]:
         time.sleep(30)
-        print('batch_id %s query status'%(batch_cfg.batch_id))
         query_return = query_batch(batch_cfg.batch_id)
         status = query_return.find('state').text
-        print('batch_id %s status is %s'%(batch_cfg.batch_id, status))
 
     assert(status == batch_state["BATCH_STATE_COMPLETE"]), "batch completed with invalid status %s"%(status)
 
