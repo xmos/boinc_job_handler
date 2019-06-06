@@ -34,7 +34,6 @@ import json
 import numpy as np
 import re
 from batch_process_api import *
-import yaml
 
 batch_state = {"BATCH_STATE_INIT":"0", "BATCH_STATE_IN_PROGRESS":"1", "BATCH_STATE_COMPLETE":"2", "BATCH_STATE_ABORTED":"3", "BATCH_STATE_RETIRED":"4"}
 # read URL and auth from a file so we don't have to include it here
@@ -108,7 +107,7 @@ def make_batch_desc(batch_cfg):
 
     for i in range(len(input_files_descriptors)):
         job = JOB_DESC()
-        job.delay_bound = batch_cfg.delay_bound #create another instance of the job if it is not completed in 1800 seconds
+        job.delay_bound = batch_cfg.delay_bound #create another instance of the job if it is not completed in 'delay_bound' seconds which is a cfg param specified in the batch cfg
         job.rsc_fops_est = batch_cfg.rsc_fops_est
         job.files = [input_files_descriptors[i]] 
 
