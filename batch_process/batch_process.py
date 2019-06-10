@@ -147,7 +147,7 @@ def make_batch_desc(batch_cfg):
         #print(job.output_template)
         batch.jobs.append(copy.copy(job))
 
-        print(job.input_template)
+        #print(job.input_template)
     return batch
 
 
