@@ -490,7 +490,7 @@ def upload_input_files(batch_cfg):
     #upload input files
     for i in range(len(batch_cfg.input_files_on_server)):
         upload_files([batch_cfg.local_files_list[i]], [batch_cfg.input_files_on_server[i]], batch_cfg.batch_id)
-        print("finished uploading file {}".format(batch_cfg.input_files_on_server[i]))
+        print("finished uploading file {}. {} out of {} files uploaded".format(batch_cfg.input_files_on_server[i], (i+1), len(batch_cfg.input_files_on_server)))
 
 
 def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
