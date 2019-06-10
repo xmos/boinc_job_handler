@@ -107,7 +107,6 @@ def make_batch_desc(batch_cfg):
 
     for i in range(len(input_files_descriptors)):
         job = JOB_DESC()
-        job.delay_bound = batch_cfg.delay_bound #create another instance of the job if it is not completed in 'delay_bound' seconds which is a cfg param specified in the batch cfg
         job.rsc_fpops_est = batch_cfg.rsc_fpops_est
         job.rsc_fpops_bound = batch_cfg.rsc_fpops_bound
         job.files = [input_files_descriptors[i]] 
@@ -136,9 +135,10 @@ def make_batch_desc(batch_cfg):
         <rsc_fpops_bound>%d</rsc_fpops_bound>
         <rsc_memory_bound>%d</rsc_memory_bound>
         <rsc_disk_bound>%d</rsc_disk_bound>
+        <delay_bound>%d</delay_bound>
     </workunit>
 </input_template>
-""" % (all_input_file_info, all_exec_file_info, all_input_file_ref, all_exec_file_ref, 1, int(batch_cfg.rsc_fpops_est), int(batch_cfg.rsc_fpops_bound), int(batch_cfg.rsc_memory_bound), int(batch_cfg.rsc_disk_bound))
+""" % (all_input_file_info, all_exec_file_info, all_input_file_ref, all_exec_file_ref, 1, int(batch_cfg.rsc_fpops_est), int(batch_cfg.rsc_fpops_bound), int(batch_cfg.rsc_memory_bound), int(batch_cfg.rsc_disk_bound), int(batch_cfg.delay_bound))
         job.output_template = create_output_template(batch_cfg)
         #print(job.output_template)
         batch.jobs.append(copy.copy(job))
@@ -324,7 +324,7 @@ class batch_config_params(object):
         self.input_file_logical_name = batch_config["input_file_logical_name"]
         self.output_dir = batch_config["output_files_directory"]
         self.output_files_list = batch_config["output_filenames"]
-        self.delay_bound = batch_config["delay_bound"] #no. of seconds before which if the scheduler doesn't get a result, it sends the job to another host
+        self.delay_bound = batch_config["delay_bound"] #no. of seconds before which if the scheduler doesn't get a result from host, it sends the job to another host
         #TODO need a way to estimate this
         self.rsc_fpops_est = batch_config["fops_estimate"] #fops estimate of a job. This controls the no. of jobs sent to the host by the scheduler. 
         self.rsc_fpops_bound = batch_config["fops_bound"] 
