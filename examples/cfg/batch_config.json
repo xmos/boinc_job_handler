@@ -4,6 +4,7 @@
     "input_files_directory": "./input_files",
     "input_files_search_pattern": ".*\\.txt",
     "input_file_logical_name": "input.txt",
+    "delete_input_from_server": true,
     "output_files_directory": "./output_files",
     "output_filenames": [{"name":"output.txt", "max_nbytes": 1e3}, {"name": "word_count.txt", "max_nbytes": 1e3}, {"name":"word_freq.txt", "max_nbytes":1e3}],
     "delay_bound": 60,

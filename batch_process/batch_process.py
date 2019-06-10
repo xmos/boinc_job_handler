@@ -50,6 +50,7 @@ def make_batch_desc(batch_cfg):
     file_info = """
         <file_info>
             <number>%s</number>
+            %s
         </file_info>
         """
     file_info_exec = """
@@ -115,7 +116,10 @@ def make_batch_desc(batch_cfg):
             job.files.append(desc)
         #create file_ref and file_info the input file which decides the job
         all_input_file_info = ""
-        all_input_file_info += (file_info%(str(0)))
+        no_delete_str = " "
+        if batch_cfg.input_nodelete == True:
+            no_delete_str = "<no_delete/>"
+        all_input_file_info += (file_info%(str(0), no_delete_str))
 
         all_input_file_ref = ""
         all_input_file_ref += (file_ref%(str(0), batch_cfg.input_file_logical_name))
@@ -330,6 +334,7 @@ class batch_config_params(object):
         self.rsc_fpops_bound = batch_config["fops_bound"] 
         self.rsc_memory_bound = batch_config["memory_bound"]
         self.rsc_disk_bound = batch_config["disk_bound"]
+        self.input_nodelete = not batch_config["delete_input_from_server"]
         '''
         Notes on different kinds of input files:
             There are 3 kinds of input files:
