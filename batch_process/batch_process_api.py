@@ -24,6 +24,7 @@ import xml.etree.ElementTree as ET
 import requests
     # you'll need to "yip install requests"
 import hashlib
+import sys
 
 # describes an input file
 #
@@ -120,9 +121,13 @@ def do_http_post(req, project_url, handler='submit_rpc_handler.php'):
     #print req
 
     url = project_url + handler
-    params = urllib.parse.urlencode({'request': req}).encode("utf-8")
+    if sys.version_info[0] < 3:
+        params = urllib.urlencode({'request': req})
+        f = urllib.urlopen(url, params)
+    else:
+        params = urllib.parse.urlencode({'request': req}).encode("utf-8")
+        f = urllib.request.urlopen(url, params)
 
-    f = urllib.request.urlopen(url, params)
     reply = f.read()
     #print "REPLY:", reply
     return ET.fromstring(reply)
@@ -189,7 +194,11 @@ def query_job(req):
     return do_http_post(req_xml, req.project)
 
 def get_output_file_core(req):
-    auth_str = hashlib.md5((req.authenticator+req.instance_name).encode('utf-8')).hexdigest()
+    if sys.version_info[0] < 3:
+        auth_str = hashlib.md5(req.authenticator+req.instance_name).hexdigest()
+    else:
+        auth_str = hashlib.md5((req.authenticator+req.instance_name).encode('utf-8')).hexdigest()
+
     name = req.instance_name
     file_num = req.file_num
     return req.project+"/get_output.php?cmd=result_file&result_name=%s&file_num=%s&auth_str=%s"%(name, file_num, auth_str)
