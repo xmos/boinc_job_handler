@@ -200,6 +200,23 @@ def query_batch(id):
 
     return r
 
+def get_completed_jobname(job_id):
+    req = REQUEST()
+    [req.project, req.authenticator] = get_auth()
+    req.job_id = job_id
+    r = query_job_core(req)
+    if check_error(r):
+        assert False, "query_job returned error"
+
+    #print(ET.tostring(r))
+    for instance in r.findall('instance'):
+        s = instance.find('state').text
+        if "Completed and validated" in s:
+            return instance.find('name').text
+    
+    print("Couldn't find a completed job with ID {}".format(job_id))
+    assert(False),"Could not find a completed job"
+
 def create_batch(name, app_name):
     req = CREATE_BATCH_REQ()
     [req.project, req.authenticator] = get_auth()
@@ -515,17 +532,18 @@ def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
     query_return = query_batch(batch_cfg.batch_id)
     status = query_return.find('state').text
     jobnames = []
-    for job in query_return.findall('job'):
-        jobnames.append(job.find('name').text + '_' + '0')
 
     #wait for batch to complete
     while status == batch_state["BATCH_STATE_INIT"]  or status == batch_state["BATCH_STATE_IN_PROGRESS"]:
         time.sleep(30)
         query_return = query_batch(batch_cfg.batch_id)
         status = query_return.find('state').text
-
+    
+    
     assert(status == batch_state["BATCH_STATE_COMPLETE"]), "batch completed with invalid status %s"%(status)
-
+    for job in query_return.findall('job'): 
+        jobnames.append(get_completed_jobname(job.find('id').text))
+    
     #download output files
     download_output_files(batch_cfg, jobnames)
 
