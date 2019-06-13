@@ -185,7 +185,7 @@ def query_completed_job(req):
     ) %(req.authenticator, req.job_name)
     return do_http_post(req_xml, req.project)
 
-def query_job(req):
+def query_job_core(req):
     req_xml = ('<query_job>\n'
     '<authenticator>%s</authenticator>\n'
     '<job_id>%s</job_id>\n'
@@ -257,6 +257,7 @@ class UPLOAD_FILES_REQ:
 def query_files_core(query_req):
     reply = do_http_post(query_req.to_xml(), query_req.project, 'job_file.php')
     return reply
+
 
 # This actually does two RPCs:
 # query_files() to find what files aren't already on server
