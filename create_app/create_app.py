@@ -3,6 +3,7 @@ import subprocess
 import shutil
 import argparse
 import json
+import hashlib
 
 root_dir="../"
 
@@ -28,6 +29,7 @@ def parse_app_cfg_file(app_cfg_file, platforms_supported):
     app_config = json.load(fapp)
     fapp.close()
     return app_config
+
 
 def create_app(app_cfg_file, platforms_supported):
     job_info = """
@@ -88,6 +90,8 @@ def create_app(app_cfg_file, platforms_supported):
         new_ver = str(max(existing_vers) + 1.0)
 
     print(new_ver)
+    app_plus_ver_str = app_cfg["app_name"] + '_' + new_ver
+    unique_hash = hashlib.md5(app_plus_ver_str).hexdigest()[-16:]
     version_dir = os.path.join(path_to_app, new_ver)
     os.makedirs(version_dir)
 
@@ -99,7 +103,9 @@ def create_app(app_cfg_file, platforms_supported):
         plat_plus_wrapper_file = [pf for pf in app_cfg["python_wrapper_file"] if pf["platform"] == plat]
         if(len(plat_plus_wrapper_file) > 0):
             #copy the wrapper file
-            shutil.copy2(plat_plus_wrapper_file[0]["filename"], plat_dir)
+            uniquename = os.path.basename(plat_plus_wrapper_file[0]["filename"]) + '_' + unique_hash 
+            shutil.copy2(plat_plus_wrapper_file[0]["filename"], os.path.join(plat_dir, uniquename))
+            plat_plus_wrapper_file[0]["filename"] = uniquename
 
         #copy job application files if present. If the physical_name is specified, means that these files are to be copied
         #on the server as part of app_create. If physical_name is not present, it means these files will be given as part of
@@ -109,7 +115,10 @@ def create_app(app_cfg_file, platforms_supported):
         if(len(plat_plus_job_app_files) > 0):
             for f in plat_plus_job_app_files[0]["files"]:
                 if(f["physical_name"] != None):
-                    shutil.copy2(f["physical_name"], plat_dir)
+                    #append md5 hash to physical name to avoid trying to upload file with same name but different contents which causes boinc to throw an error
+                    uniquename = os.path.basename(f["physical_name"]) + '_' + unique_hash 
+                    shutil.copy2(f["physical_name"], os.path.join(plat_dir, uniquename))
+                    f["physical_name"] = uniquename
 
         #copy any other input files
         plat_plus_other_input_files = [pf for pf in app_cfg["other_platform_dependent_input_files"] if pf["platform"] == plat]
@@ -117,12 +126,16 @@ def create_app(app_cfg_file, platforms_supported):
         if(len(plat_plus_other_input_files) > 0):
             for f in plat_plus_other_input_files[0]["files"]:
                 assert(f["physical_name"] != None), "physical file not specified for a file provided as input to app"
-                shutil.copy2(f["physical_name"], plat_dir)
+                uniquename = os.path.basename(f["physical_name"]) + '_' + unique_hash 
+                shutil.copy2(f["physical_name"], os.path.join(plat_dir, uniquename))
+                f["physical_name"] = uniquename
 
         other_common_files = [f for f in app_cfg["other_common_input_files"]]
         for f in other_common_files:
             assert(f["physical_name"] != None), "physical file not specified to a file that needs to be copied on server"
-            shutil.copy2(f["physical_name"], plat_dir)
+            uniquename = os.path.basename(f["physical_name"]) + '_' + unique_hash 
+            shutil.copy2(f["physical_name"], os.path.join(plat_dir, uniquename))
+            f["physical_name"] = uniquename
 
         #write job.xml file
         job_task_str = ""

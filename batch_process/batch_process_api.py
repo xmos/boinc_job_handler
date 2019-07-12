@@ -119,18 +119,23 @@ class REQUEST:
 
 def do_http_post(req, project_url, handler='submit_rpc_handler.php'):
     #print req
+    while True:
+        try:
+            url = project_url + handler
+            if sys.version_info[0] < 3:
+                params = urllib.urlencode({'request': req})
+                f = urllib.urlopen(url, params)
+            else:
+                params = urllib.parse.urlencode({'request': req}).encode("utf-8")
+                f = urllib.request.urlopen(url, params)
 
-    url = project_url + handler
-    if sys.version_info[0] < 3:
-        params = urllib.urlencode({'request': req})
-        f = urllib.urlopen(url, params)
-    else:
-        params = urllib.parse.urlencode({'request': req}).encode("utf-8")
-        f = urllib.request.urlopen(url, params)
+            reply = f.read()
+            #print "REPLY:", reply
+            return ET.fromstring(reply)
+        except:
+            print("error in do_http_post. Retrying")
+            pass
 
-    reply = f.read()
-    #print "REPLY:", reply
-    return ET.fromstring(reply)
 
 ########### API FUNCTIONS START HERE ###############
 
