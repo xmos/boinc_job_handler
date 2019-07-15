@@ -543,6 +543,9 @@ def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
     assert(status == batch_state["BATCH_STATE_COMPLETE"]), "batch completed with invalid status %s"%(status)
     for job in query_return.findall('job'): 
         jobnames.append(get_completed_jobname(job.find('id').text))
+
+    for j in jobnames:
+        print(j)
     
     #download output files
     download_output_files(batch_cfg, jobnames)
