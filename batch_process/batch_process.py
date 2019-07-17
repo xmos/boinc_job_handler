@@ -132,7 +132,7 @@ def make_batch_desc(batch_cfg):
     <workunit>
         %s
         %s
-        <target_nresults>1</target_nresults>
+        <target_nresults>%d</target_nresults>
         <min_quorum>1</min_quorum>
         <credit>%d</credit>
         <rsc_fpops_est>%d</rsc_fpops_est>
@@ -142,7 +142,7 @@ def make_batch_desc(batch_cfg):
         <delay_bound>%d</delay_bound>
     </workunit>
 </input_template>
-""" % (all_input_file_info, all_exec_file_info, all_input_file_ref, all_exec_file_ref, 1, int(batch_cfg.rsc_fpops_est), int(batch_cfg.rsc_fpops_bound), int(batch_cfg.rsc_memory_bound), int(batch_cfg.rsc_disk_bound), int(batch_cfg.delay_bound))
+""" % (all_input_file_info, all_exec_file_info, all_input_file_ref, all_exec_file_ref, int(batch_cfg.target_nresults), 1, int(batch_cfg.rsc_fpops_est), int(batch_cfg.rsc_fpops_bound), int(batch_cfg.rsc_memory_bound), int(batch_cfg.rsc_disk_bound), int(batch_cfg.delay_bound))
         job.output_template = create_output_template(batch_cfg)
         #print(job.output_template)
         batch.jobs.append(copy.copy(job))
@@ -280,6 +280,7 @@ def parse_arguments():
     parser.add_argument("batch_cfg_file", help="batch config file")
     parser.add_argument("auth_file", help="authorization details of the user trying to submit a batch")
     parser.add_argument("--platforms_supported", nargs="*",type=str,default=[])
+    parser.add_argument("--process_existing_batch", default=False, action="store_true")
     parser.parse_args()
     args = parser.parse_args()
     return args
@@ -352,6 +353,7 @@ class batch_config_params(object):
         self.rsc_memory_bound = batch_config["memory_bound"]
         self.rsc_disk_bound = batch_config["disk_bound"]
         self.input_nodelete = not batch_config["delete_input_from_server"]
+        self.target_nresults = batch_config["target_nresults"]
         '''
         Notes on different kinds of input files:
             There are 3 kinds of input files:
@@ -510,24 +512,43 @@ def upload_input_files(batch_cfg):
         print("finished uploading file {}. {} out of {} files uploaded".format(batch_cfg.input_files_on_server[i], (i+1), len(batch_cfg.input_files_on_server)))
 
 
-def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
+def process_batch(app_cfg_file, batch_cfg_file, platforms_supported, process_existing_batch):
     assert(len(platforms_supported) > 0),"no platforms specified. Provide --platform_supported argument on the command line"
-    
+
+    last_batch_file = "last_batch_run.json"
+    last_batch = {}
+    if process_existing_batch == True:
+        try:
+            with open(last_batch_file, "r") as fp:
+                last_batch = json.load(fp)
+                fp.close()
+        except:
+            assert False, "no last run batch in progress found. Exiting"
+            return
+
     batch_cfg = parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported)
-
-    if os.path.exists(batch_cfg.output_dir):
-        shutil.rmtree(batch_cfg.output_dir)
-    os.makedirs(batch_cfg.output_dir)
-
     app_name = batch_cfg.app_name
-    batch_name = app_name + '_' + str(random.randint(1,1234565))
-    batch_cfg.batch_name = batch_name
 
-    batch_cfg.batch_id = create_batch(batch_name, app_name) #batch_id is a string
-    print('created batch ',batch_cfg.batch_id)
+    if process_existing_batch == False: #create and submit a new batch
+        if os.path.exists(batch_cfg.output_dir):
+            shutil.rmtree(batch_cfg.output_dir)
+        os.makedirs(batch_cfg.output_dir)
 
-    upload_input_files(batch_cfg)
-    submit_batch(batch_cfg)
+        batch_name = app_name + '_' + str(random.randint(1,1234565))
+        batch_cfg.batch_name = batch_name
+
+        batch_cfg.batch_id = create_batch(batch_name, app_name) #batch_id is a string
+        print('created batch ',batch_cfg.batch_id)
+        last_batch["name"] = batch_cfg.batch_name
+        last_batch["id"] = batch_cfg.batch_id
+        with open(last_batch_file, 'w') as fp:
+            json.dump(last_batch, fp)
+
+        upload_input_files(batch_cfg)
+        submit_batch(batch_cfg)
+    else: #get batch_name and batch_id from the last run batch
+        batch_cfg.batch_name = last_batch["name"]
+        batch_cfg.batch_id = last_batch["id"]
 
     query_return = query_batch(batch_cfg.batch_id)
     status = query_return.find('state').text
@@ -551,9 +572,10 @@ def process_batch(app_cfg_file, batch_cfg_file, platforms_supported):
     download_output_files(batch_cfg, jobnames)
 
     retire_batch(batch_cfg.batch_id)
+    os.remove(last_batch_file)
 
 auth_file=""
 if __name__ == "__main__":
     args = parse_arguments()
     auth_file = args.auth_file
-    process_batch(args.app_cfg_file, args.batch_cfg_file, args.platforms_supported)
+    process_batch(args.app_cfg_file, args.batch_cfg_file, args.platforms_supported, args.process_existing_batch)
