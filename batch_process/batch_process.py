@@ -279,8 +279,9 @@ def parse_arguments():
     parser.add_argument("app_cfg_file", help="app config file",)
     parser.add_argument("batch_cfg_file", help="batch config file")
     parser.add_argument("auth_file", help="authorization details of the user trying to submit a batch")
-    parser.add_argument("--platforms_supported", nargs="*",type=str,default=[])
+    parser.add_argument("--platforms_supported", nargs="*", type=str, default=[])
     parser.add_argument("--process_existing_batch", default=False, action="store_true")
+    parser.add_argument("--last_batch_file", type=str, default='last_batch_run.json')
     parser.parse_args()
     args = parser.parse_args()
     return args
@@ -512,10 +513,9 @@ def upload_input_files(batch_cfg):
         print("finished uploading file {}. {} out of {} files uploaded".format(batch_cfg.input_files_on_server[i], (i+1), len(batch_cfg.input_files_on_server)))
 
 
-def process_batch(app_cfg_file, batch_cfg_file, platforms_supported, process_existing_batch):
+def process_batch(app_cfg_file, batch_cfg_file, platforms_supported, process_existing_batch, *, last_batch_file):
     assert(len(platforms_supported) > 0),"no platforms specified. Provide --platform_supported argument on the command line"
 
-    last_batch_file = "last_batch_run.json"
     last_batch = {}
     if process_existing_batch == True:
         try:
@@ -525,6 +525,10 @@ def process_batch(app_cfg_file, batch_cfg_file, platforms_supported, process_exi
         except:
             assert False, "no last run batch in progress found. Exiting"
             return
+    else:
+        if os.path.exists(args.last_batch_file):
+            raise FileExistsError("last_batch_file already exists at {}. "
+                "Terminating to prevent overwriting batch in progress.".format(args.last_batch_file))
 
     batch_cfg = parse_cfg_files(app_cfg_file, batch_cfg_file, platforms_supported)
     app_name = batch_cfg.app_name
@@ -578,4 +582,5 @@ auth_file=""
 if __name__ == "__main__":
     args = parse_arguments()
     auth_file = args.auth_file
-    process_batch(args.app_cfg_file, args.batch_cfg_file, args.platforms_supported, args.process_existing_batch)
+    process_batch(args.app_cfg_file, args.batch_cfg_file, args.platforms_supported, args.process_existing_batch, 
+                  last_batch_file=args.last_batch_file)
